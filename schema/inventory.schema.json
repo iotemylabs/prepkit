@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prepkit.dev/schema/v0.1/inventory.schema.json",
+  "title": "PrepKit Inventory Export",
+  "description": "The user's actual holdings: what a running instance stores and what a full export contains. Distinct from kit-template.schema.json, which describes an aspirational standard. The central modelling decision here is the Item/Lot split: an Item is a type of thing you own ('canned chili'), a Lot is a dated batch of it ('6 cans, best-by 2027-03'). Expiration lives on Lots. Collapsing the two makes partial rotation unrepresentable and is the most common way inventory tools get this wrong.",
+  "type": "object",
+  "required": ["spec_version", "exported_at"],
+  "additionalProperties": false,
+
+  "properties": {
+    "spec_version": { "const": "0.1" },
+    "exported_at": { "type": "string", "format": "date-time" },
+    "instance_id": {
+      "type": "string",
+      "description": "Stable per-installation identifier. Needed later for multi-device sync conflict attribution; harmless now."
+    },
+    "household": { "$ref": "#/$defs/household" },
+    "containers": { "type": "array", "items": { "$ref": "#/$defs/container" } },
+    "kits": { "type": "array", "items": { "$ref": "#/$defs/kit" } },
+    "items": { "type": "array", "items": { "$ref": "#/$defs/item" } },
+    "lots": { "type": "array", "items": { "$ref": "#/$defs/lot" } },
+    "documents": { "type": "array", "items": { "$ref": "#/$defs/document" } },
+    "maintenance": { "type": "array", "items": { "$ref": "#/$defs/maintenance_event" } }
+  },
+
+  "$defs": {
+    "uuid": { "type": "string", "format": "uuid" },
+
+    "household": {
+      "type": "object",
+      "description": "Drives per_person and per_person_per_day scaling. Deliberately minimal: this is planning input, not a personnel file.",
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string" },
+        "persons": { "type": "array", "items": { "$ref": "#/$defs/person" } },
+        "pets": { "type": "integer", "minimum": 0 },
+        "climate": { "type": "string", "enum": ["temperate", "cold", "hot_arid", "hot_humid"] },
+        "environment": { "type": "string", "enum": ["urban", "suburban", "rural"] }
+      }
+    },
+
+    "person": {
+      "type": "object",
+      "required": ["id", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "label": {
+          "type": "string",
+          "description": "How the household refers to them. A role ('parent 1', 'youngest') is sufficient and preferred over a full legal name for anything that may be exported to a device that leaves the house."
+        },
+        "age_band": {
+          "type": "string",
+          "enum": ["infant", "child", "teen", "adult", "senior"],
+          "description": "Age band rather than birthdate: enough for consumable scaling and kit sizing, without carrying a precise identifier into exports."
+        },
+        "needs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Free-text planning notes that affect what the household must stock (dietary restriction, mobility aid, prescription dependency). Treated as SENSITIVE: consumers MUST exclude this field from any unencrypted export by default, and MUST require explicit opt-in per export."
+        }
+      }
+    },
+
+    "container": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": false,
+      "description": "Nestable physical vessel. A pouch inside a pack inside a vehicle is three containers, two edges. Self-referential parentage MUST be rejected on write.",
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "name": { "type": "string" },
+        "parent_id": { "$ref": "#/$defs/uuid" },
+        "type": {
+          "type": "string",
+          "enum": ["backpack", "sling", "pouch", "tote", "bin", "duffel", "case", "tin", "vehicle", "room", "shelf", "other"]
+        },
+        "color_code": {
+          "type": "string",
+          "description": "Physical color-coding of the vessel, if the user follows a color convention. Free-form: it records the real pouch's color, which may or may not match a category's canonical color."
+        },
+        "location_note": { "type": "string" },
+        "qr_slug": {
+          "type": "string",
+          "description": "Short opaque token printed on the container's label. MUST NOT encode a URL containing personal data, and MUST be resolvable only against the local instance."
+        },
+        "weight_g": { "type": "number", "minimum": 0, "description": "Empty weight of the vessel itself." }
+      }
+    },
+
+    "kit": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": false,
+      "description": "A user's real instance of a preparedness kit, optionally scored against a template.",
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "name": { "type": "string" },
+        "template_id": {
+          "type": "string",
+          "description": "Slug of the template this was instantiated from, if any. Retained after instantiation so the kit can be re-scored when the template is updated."
+        },
+        "template_version": { "type": "string" },
+        "layer": { "type": "string", "enum": ["self", "home", "vehicle", "offsite", "evacuation"] },
+        "duration": { "type": "string", "enum": ["72h", "2w", "1m", "3m", "1y", "indefinite"] },
+        "evacuation_tier": { "type": "string", "enum": ["short_term", "long_term", "inch"] },
+        "container_id": { "$ref": "#/$defs/uuid" },
+        "assigned_person_id": { "$ref": "#/$defs/uuid" },
+        "last_verified": {
+          "type": "string",
+          "format": "date",
+          "description": "Last time a human physically opened this kit and confirmed contents. Distinct from any record edit timestamp: a database that has drifted from the actual bag is the failure this field exists to expose."
+        },
+        "notes": { "type": "string" }
+      }
+    },
+
+    "item": {
+      "type": "object",
+      "required": ["id", "name", "category"],
+      "additionalProperties": false,
+      "description": "A type of thing the user owns. Non-expiring items carry their quantity here directly; expiring items leave quantity null and carry it on their Lots.",
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "name": { "type": "string" },
+        "category": {
+          "type": "string",
+          "enum": ["water", "food", "shelter", "first_aid", "comms", "fire", "tools", "hygiene", "clothing", "personal", "cooking", "power", "documents", "navigation", "security"]
+        },
+        "template_item_id": {
+          "type": "string",
+          "description": "Which template line this satisfies. This is what lets a user's chosen product count toward a generic requirement, and what makes substitution survive a template upgrade."
+        },
+        "kit_id": { "$ref": "#/$defs/uuid" },
+        "container_id": { "$ref": "#/$defs/uuid" },
+        "quantity": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Present for non-consumables. MUST be null or absent when the item has lots; deriving it from the sum of lot quantities prevents the two from disagreeing."
+        },
+        "unit": { "type": "string" },
+        "product": {
+          "type": "string",
+          "description": "The actual make and model the user owns. Free-form and user-supplied. Unlike a template exemplar this carries no recommendation."
+        },
+        "weight_g": { "type": "number", "minimum": 0 },
+        "acquired": { "type": "string", "format": "date" },
+        "cost": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Optional. Useful for insurance documentation. Treated as SENSITIVE for export purposes."
+        },
+        "photo_ids": { "type": "array", "items": { "$ref": "#/$defs/uuid" } },
+        "serial": {
+          "type": "string",
+          "description": "SENSITIVE. Valuable for insurance claims and theft recovery, and for exactly that reason MUST be excluded from unencrypted exports by default."
+        },
+        "notes": { "type": "string" },
+        "archived": { "type": "boolean", "default": false }
+      }
+    },
+
+    "lot": {
+      "type": "object",
+      "required": ["id", "item_id", "quantity"],
+      "additionalProperties": false,
+      "description": "A dated batch of a consumable item. Multiple lots per item is the normal case, not an edge case: it is how partial rotation is represented.",
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "item_id": { "$ref": "#/$defs/uuid" },
+        "quantity": { "type": "number", "minimum": 0 },
+        "unit": { "type": "string" },
+        "expires": {
+          "type": "string",
+          "format": "date",
+          "description": "The printed date, transcribed as-is. Absent for items that degrade without a printed date; those rely on next_check instead."
+        },
+        "expiry_basis": {
+          "type": "string",
+          "enum": ["printed_best_by", "printed_use_by", "printed_exp", "estimated", "manufacture_plus_shelf_life"],
+          "description": "What the date means. 'Best by' on rice and 'use by' on infant formula are different in kind, and a rotation dashboard that treats them identically gives bad advice. Consumers SHOULD distinguish them in reporting."
+        },
+        "opened": {
+          "type": "string",
+          "format": "date",
+          "description": "Once opened, printed shelf life usually no longer applies."
+        },
+        "next_check": {
+          "type": "string",
+          "format": "date",
+          "description": "Next physical inspection due. The primary mechanism for items with no printed date (stored fuel, batteries, seals) and a secondary one for everything else."
+        },
+        "container_id": {
+          "$ref": "#/$defs/uuid",
+          "description": "Lots of one item may sit in different places. Overrides the parent item's container when present."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["sealed", "opened", "consumed", "discarded", "rotated_out"],
+          "default": "sealed"
+        },
+        "notes": { "type": "string" }
+      }
+    },
+
+    "document": {
+      "type": "object",
+      "required": ["id", "title", "kind"],
+      "additionalProperties": false,
+      "description": "Critical information. SENSITIVE BY DEFAULT: every field here is assumed confidential, and this entity MUST NOT appear in any unencrypted export unless the user explicitly opts in per export. See docs/threat-model.md before implementing storage.",
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "title": { "type": "string" },
+        "kind": {
+          "type": "string",
+          "enum": ["plan", "contact_sheet", "medical", "insurance", "identity", "property", "financial", "manual", "reference", "other"]
+        },
+        "body": {
+          "type": "string",
+          "description": "Markdown content, for documents authored in-app such as a communications plan or rendezvous list."
+        },
+        "file_id": { "$ref": "#/$defs/uuid" },
+        "person_ids": { "type": "array", "items": { "$ref": "#/$defs/uuid" } },
+        "review_interval_months": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Plans decay. A rendezvous point at a since-demolished building is worse than none, so plans get review reminders exactly as consumables get expiry reminders."
+        },
+        "last_reviewed": { "type": "string", "format": "date" },
+        "export_ok": {
+          "type": "boolean",
+          "default": false,
+          "description": "Explicit per-document opt-in for inclusion in offline exports. Defaults false. Consumers MUST NOT provide a blanket 'export everything' switch that bypasses this."
+        }
+      }
+    },
+
+    "maintenance_event": {
+      "type": "object",
+      "required": ["id", "date", "kind"],
+      "additionalProperties": false,
+      "description": "Log of physical actions taken. The audit trail that distinguishes a kit genuinely verified last month from one whose record merely says so.",
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "date": { "type": "string", "format": "date" },
+        "kind": {
+          "type": "string",
+          "enum": ["inspection", "rotation", "replacement", "function_test", "repack", "drill"]
+        },
+        "kit_id": { "$ref": "#/$defs/uuid" },
+        "item_id": { "$ref": "#/$defs/uuid" },
+        "lot_id": { "$ref": "#/$defs/uuid" },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

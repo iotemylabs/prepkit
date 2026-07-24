@@ -1,0 +1,322 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prepkit.dev/schema/v0.1/kit-template.schema.json",
+  "title": "PrepKit Kit Template",
+  "description": "A portable, vendor-neutral description of a preparedness kit. A template describes GENERIC item types and target quantities, not specific products a user owns. Instantiating a template produces user-owned Kit/Item/Lot records; the template itself stays immutable and is used as the standard that readiness is scored against.",
+  "type": "object",
+  "required": ["spec_version", "id", "name", "layer", "items"],
+  "additionalProperties": false,
+
+  "properties": {
+    "spec_version": {
+      "const": "0.1",
+      "description": "Version of the PrepKit template spec this file conforms to."
+    },
+
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Stable slug, unique within a template pack. Referenced by extends and by instantiated kits.",
+      "examples": ["home-72hr-baseline", "get-home-bag-urban"]
+    },
+
+    "name": { "type": "string", "minLength": 1 },
+
+    "summary": {
+      "type": "string",
+      "description": "One or two sentences on what this kit is for and who it suits."
+    },
+
+    "extends": {
+      "type": "string",
+      "description": "id of a base template. Items merge by item.id: a child entry with the same id overrides the parent's; a child entry with quantity 0 removes it. Single inheritance only, max depth 3.",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+
+    "layer": {
+      "$ref": "#/$defs/layer",
+      "description": "Which layer of the concentric preparedness model this kit belongs to."
+    },
+
+    "edc_tier": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4,
+      "description": "Only meaningful when layer is 'self'. 1 = wallet/phone/keys, 2 = adds core tools, 3 = adds pocketable extras, 4 = bag-borne."
+    },
+
+    "duration": {
+      "$ref": "#/$defs/duration",
+      "description": "Sustainment target this kit is sized for. Drives per-person consumable math."
+    },
+
+    "evacuation_tier": {
+      "$ref": "#/$defs/evacuation_tier",
+      "description": "For kits intended to leave the home base."
+    },
+
+    "assumptions": {
+      "$ref": "#/$defs/assumptions",
+      "description": "The conditions this template was sized for. Scaling and gap analysis read these; a user profile that differs materially should surface a warning rather than silently rescale."
+    },
+
+    "container": {
+      "$ref": "#/$defs/container_spec",
+      "description": "Optional description of the vessel itself (pack, tote, pouch). Generic; not a product recommendation."
+    },
+
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/template_item" }
+    },
+
+    "skills": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/skill_ref" },
+      "description": "Competencies this kit assumes. Gear without skill is a known failure mode, so templates may assert it explicitly and readiness reports may surface it."
+    },
+
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+
+    "source": {
+      "$ref": "#/$defs/source",
+      "description": "Provenance and license. REQUIRED for any template distributed in a pack. See docs/licensing.md before deriving a template from published third-party material."
+    }
+  },
+
+  "allOf": [
+    {
+      "$comment": "edc_tier is only meaningful on the 'self' layer. The validator also checks this and emits a readable message; this constraint is here so schema-only consumers still catch it.",
+      "if": { "properties": { "layer": { "const": "self" } }, "required": ["layer"] },
+      "then": {},
+      "else": { "not": { "required": ["edc_tier"] } }
+    }
+  ],
+
+  "$defs": {
+    "layer": {
+      "type": "string",
+      "enum": ["self", "home", "vehicle", "offsite", "evacuation"],
+      "description": "self = carried on the body. home = the primary base. vehicle = mobile base. offsite = workplace, school, locker. evacuation = kits staged to leave."
+    },
+
+    "duration": {
+      "type": "string",
+      "enum": ["72h", "2w", "1m", "3m", "1y", "indefinite"],
+      "description": "Sustainment tiers. Most households build 72h first and extend outward."
+    },
+
+    "evacuation_tier": {
+      "type": "string",
+      "enum": ["short_term", "long_term", "inch"],
+      "description": "short_term = brief displacement to a nearby safe point. long_term = relocation to a prepared bug-out location. inch = 'I'm Never Coming Home', the last-resort tier."
+    },
+
+    "category": {
+      "type": "string",
+      "enum": [
+        "water", "food", "shelter", "first_aid", "comms",
+        "fire", "tools", "hygiene", "clothing", "personal",
+        "cooking", "power", "documents", "navigation", "security"
+      ],
+      "description": "Functional category. The first eleven follow the widely used color-coded prepping convention (water=blue, food=green, shelter=brown, first_aid=red, comms=yellow, fire=orange, tools=black, hygiene=white, clothing=purple, personal=pink, cooking=gray). The last four are additions this spec makes because they are poorly served by folding them into 'tools' or 'personal'. Color is presentation, not data: see docs/categories.md for the mapping."
+    },
+
+    "criticality": {
+      "type": "string",
+      "enum": ["essential", "recommended", "optional"],
+      "description": "Weight for readiness scoring. A kit missing an essential item is not merely incomplete; scoring MUST NOT let a surplus of optional items mask a missing essential."
+    },
+
+    "unit": {
+      "type": "string",
+      "enum": ["ea", "pair", "set", "l", "ml", "gal", "floz", "kg", "g", "lb", "oz", "kcal", "m", "ft", "day", "dose"],
+      "description": "Unit of the quantity field. Prefer SI or US customary consistently within a pack; consumers are expected to convert for display."
+    },
+
+    "scaling": {
+      "type": "string",
+      "enum": ["fixed", "per_person", "per_person_per_day", "per_pet", "per_vehicle", "per_household"],
+      "default": "fixed",
+      "description": "How quantity multiplies when the template is instantiated against a real household. per_person_per_day multiplies by both headcount and the duration in days. 'fixed' means one is enough regardless of headcount (a map, a radio)."
+    },
+
+    "template_item": {
+      "type": "object",
+      "required": ["id", "name", "category", "quantity", "unit"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "Stable within the template. Used as the merge key for 'extends' and as the anchor for user substitutions across template upgrades."
+        },
+        "name": {
+          "type": "string",
+          "description": "GENERIC item type, not a product. 'folding knife', not 'Benchmade Bugout'. Specific products belong in exemplars, which are advisory only."
+        },
+        "category": { "$ref": "#/$defs/category" },
+        "quantity": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Target quantity before scaling. 0 is legal only in a child template, where it removes an inherited item."
+        },
+        "unit": { "$ref": "#/$defs/unit" },
+        "scaling": { "$ref": "#/$defs/scaling" },
+        "criticality": { "$ref": "#/$defs/criticality", "default": "recommended" },
+        "consumable": {
+          "$ref": "#/$defs/consumable_profile",
+          "description": "Present if this item expires or degrades. Its presence is what makes instantiated instances tracked as dated Lots rather than plain Items."
+        },
+        "substitutes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "item ids elsewhere in this template that can satisfy the same need. Readiness scoring SHOULD count a satisfied substitute rather than double-flagging both as gaps.",
+          "uniqueItems": true
+        },
+        "redundancy_group": {
+          "type": "string",
+          "description": "Free-form label. Items sharing a group serve one capability by different means (pocket light vs headlamp). Reporting can show capability coverage rather than raw item counts."
+        },
+        "weight_g": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Typical unit weight in grams. Advisory, used for pack-weight estimates. Actual weights live on user items."
+        },
+        "notes": { "type": "string" },
+        "exemplars": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/exemplar" },
+          "description": "Illustrative products. ADVISORY ONLY: consumers MUST treat these as examples of the generic type, never as required purchases, and MUST NOT present them as endorsements. Templates are valid and complete with this field absent, which is the recommended default for redistributed packs."
+        },
+        "regulatory_note": {
+          "type": "string",
+          "description": "Free-text flag for items whose legality varies by jurisdiction (certain blades, batons, chemical sprays, radio transmit privileges). Consumers SHOULD surface this rather than silently including the item."
+        }
+      }
+    },
+
+    "consumable_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "shelf_life_months": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Typical unopened shelf life from manufacture. A planning default only; a real Lot's printed date always wins over this estimate."
+        },
+        "rotation_policy": {
+          "type": "string",
+          "enum": ["fifo", "use_and_replace", "test_and_replace", "replace_on_expiry"],
+          "description": "fifo = eat into normal use, oldest first. use_and_replace = consumed in daily life and restocked. test_and_replace = periodic function check drives replacement (batteries, alarms). replace_on_expiry = discard and rebuy on date."
+        },
+        "check_interval_months": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "How often the item should be physically inspected, independent of any printed date."
+        },
+        "degrades_without_expiry": {
+          "type": "boolean",
+          "default": false,
+          "description": "True for items with no printed date that still lose function over time (stored fuel, rubber seals, adhesive bandages, sunscreen). Drives interval-based reminders instead of date-based ones."
+        }
+      }
+    },
+
+    "exemplar": {
+      "type": "object",
+      "required": ["description"],
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "attribution": {
+          "type": "string",
+          "description": "Who recommended it, if this reflects a third party's published pick. Required when the exemplar is drawn from an identifiable source."
+        },
+        "url": { "type": "string", "format": "uri" }
+      }
+    },
+
+    "container_spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["backpack", "sling", "pouch", "tote", "bin", "duffel", "case", "tin", "vehicle", "room", "shelf", "other"]
+        },
+        "capacity_l": { "type": "number", "exclusiveMinimum": 0 },
+        "target_weight_kg": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Ceiling the kit is designed to stay under. A pack too heavy to actually carry is a common and serious failure; consumers SHOULD warn when the estimate exceeds this."
+        },
+        "notes": { "type": "string" }
+      }
+    },
+
+    "assumptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "persons": { "type": "integer", "minimum": 1, "default": 1 },
+        "pets": { "type": "integer", "minimum": 0, "default": 0 },
+        "climate": {
+          "type": "string",
+          "enum": ["temperate", "cold", "hot_arid", "hot_humid", "any"],
+          "default": "any"
+        },
+        "environment": {
+          "type": "string",
+          "enum": ["urban", "suburban", "rural", "any"],
+          "default": "any"
+        },
+        "mobility": {
+          "type": "string",
+          "enum": ["on_foot", "vehicle", "stationary"],
+          "description": "Primary mode this kit assumes. Drives weight ceilings and whether bulk water is realistic."
+        },
+        "notes": { "type": "string" }
+      }
+    },
+
+    "skill_ref": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "criticality": { "$ref": "#/$defs/criticality" },
+        "notes": { "type": "string" }
+      }
+    },
+
+    "source": {
+      "type": "object",
+      "required": ["author", "license"],
+      "additionalProperties": false,
+      "properties": {
+        "author": { "type": "string" },
+        "license": {
+          "type": "string",
+          "description": "SPDX identifier where possible (CC0-1.0, CC-BY-4.0, MIT). Packs SHOULD refuse to load templates with no license declared."
+        },
+        "derived_from": {
+          "type": "string",
+          "description": "Cite the published work this was informed by, if any. Organizational frameworks and generic item types are freely reimplementable; verbatim curated lists are not. See docs/licensing.md."
+        },
+        "url": { "type": "string", "format": "uri" },
+        "permission_status": {
+          "type": "string",
+          "enum": ["original", "public_domain", "licensed", "permission_granted", "unverified"],
+          "description": "Distribution channels SHOULD reject 'unverified' templates that also set derived_from."
+        }
+      }
+    }
+  }
+}

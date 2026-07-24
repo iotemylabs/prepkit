@@ -1,0 +1,313 @@
+spec_version: "0.1"
+id: vehicle-kit-baseline
+name: Vehicle Kit
+summary: >
+  Supplies staged in the vehicle, covering roadside breakdowns, being stranded by
+  weather or closures, and the case where the vehicle is where you happen to be
+  when something happens. Extends the get-home bag, on the reasoning that a
+  vehicle kit should contain a get-home bag rather than duplicate one.
+
+extends: get-home-bag-urban
+layer: vehicle
+duration: 72h
+
+container:
+  type: vehicle
+  notes: >
+    Weight is nearly free here, which inverts the design constraint of the parent
+    template. Temperature is the new constraint: a cabin or trunk swings from well
+    below freezing to well above 60C, which destroys medications, batteries, and
+    sealed water far faster than a shelf indoors. Every consumable in this kit
+    gets a shorter check interval than the same item would get at home.
+
+assumptions:
+  persons: 1
+  pets: 0
+  climate: any
+  environment: any
+  mobility: vehicle
+  notes: >
+    Assumes one occupant by default; scale for how many people actually travel in
+    the vehicle. Cold climates should treat the warmth lines as essential rather
+    than recommended, because being stranded in a stationary vehicle in winter is
+    the specific scenario that kills people.
+
+items:
+  # --- inherited lines, overridden for the vehicle context ---------------
+  - id: water-carried
+    name: Stored water in vehicle
+    category: water
+    quantity: 4
+    unit: l
+    scaling: per_person
+    criticality: essential
+    weight_g: 4000
+    consumable:
+      shelf_life_months: 6
+      rotation_policy: fifo
+      check_interval_months: 3
+    notes: >
+      Overrides the parent's carried-water line. Weight is no longer limiting, so
+      carry more. The shelf life is halved relative to indoor storage because heat
+      cycling degrades both the water and its container; freezing can split
+      containers outright, so leave headspace in cold climates.
+
+  - id: personal-medication
+    name: Personal medication, 24h
+    category: first_aid
+    quantity: 1
+    unit: day
+    scaling: per_person
+    criticality: essential
+    consumable:
+      rotation_policy: fifo
+      check_interval_months: 1
+    notes: >
+      Overrides the parent's interval. Most medications are rated for a narrow
+      room-temperature range and degrade quickly in a hot cabin. Storing anything
+      you genuinely depend on in a vehicle is a poor idea; if you must, treat it
+      as short-cycle stock and check it monthly.
+
+  - id: power-bank
+    name: Power bank and cable
+    category: power
+    quantity: 1
+    unit: ea
+    scaling: fixed
+    criticality: recommended
+    weight_g: 250
+    consumable:
+      rotation_policy: test_and_replace
+      check_interval_months: 3
+      degrades_without_expiry: true
+    notes: >
+      Downgraded from essential because the vehicle itself can charge devices while
+      it runs. Note that lithium cells degrade fastest at high temperature and
+      high state of charge, so a vehicle-stored bank has a genuinely short life.
+
+  - id: trail-food
+    name: Heat-tolerant shelf-stable food
+    category: food
+    quantity: 2000
+    unit: kcal
+    scaling: per_person
+    criticality: recommended
+    weight_g: 500
+    consumable:
+      shelf_life_months: 6
+      rotation_policy: fifo
+      check_interval_months: 3
+    notes: >
+      Overrides the parent. Choose items that survive heat cycling: chocolate,
+      most bars, and anything oily go rancid or liquefy. Nuts, dried fruit, and
+      sealed crackers hold up better.
+
+  - id: emergency-blanket
+    name: Wool blanket or sleeping bag
+    category: shelter
+    quantity: 1
+    unit: ea
+    scaling: per_person
+    criticality: essential
+    weight_g: 1500
+    notes: >
+      Upgraded from the parent's mylar sheet. A stationary vehicle in winter loses
+      heat quickly and idling for warmth risks carbon monoxide if the exhaust is
+      obstructed by snow. Real insulation is the answer, and weight is free here.
+
+  - id: duct-tape
+    name: Duct tape
+    category: tools
+    quantity: 1
+    unit: ea
+    scaling: fixed
+    criticality: recommended
+    weight_g: 200
+
+  # --- lines removed from the parent -------------------------------------
+  - id: paper-map
+    name: Paper map
+    category: navigation
+    quantity: 0
+    unit: ea
+    notes: >
+      Removed and replaced by the wider-area map below. Quantity 0 is the spec's
+      mechanism for dropping an inherited line.
+
+  # --- vehicle-specific additions ----------------------------------------
+  - id: regional-road-map
+    name: Regional road atlas
+    category: navigation
+    quantity: 1
+    unit: ea
+    scaling: per_vehicle
+    criticality: essential
+    consumable:
+      check_interval_months: 36
+    notes: Vehicle range makes the local walking map from the parent template insufficient.
+
+  - id: jumper-cables
+    name: Jumper cables or jump pack
+    category: tools
+    quantity: 1
+    unit: ea
+    scaling: per_vehicle
+    criticality: essential
+    weight_g: 2000
+    consumable:
+      rotation_policy: test_and_replace
+      check_interval_months: 3
+      degrades_without_expiry: true
+    notes: A jump pack must be charged to be useful, and self-discharges faster when hot.
+
+  - id: tire-repair
+    name: Tire inflator and plug kit
+    category: tools
+    quantity: 1
+    unit: ea
+    scaling: per_vehicle
+    criticality: essential
+    weight_g: 1500
+
+  - id: spare-tire-tools
+    name: Spare tire, jack, and lug wrench
+    category: tools
+    quantity: 1
+    unit: set
+    scaling: per_vehicle
+    criticality: essential
+    consumable:
+      check_interval_months: 6
+    notes: >
+      Check the spare's pressure on the same interval as the road tires. A flat
+      spare is the most common way this line silently fails.
+
+  - id: tow-strap
+    name: Tow strap
+    category: tools
+    quantity: 1
+    unit: ea
+    scaling: per_vehicle
+    criticality: optional
+    weight_g: 1500
+
+  - id: reflective-triangles
+    name: Reflective triangles or flares
+    category: security
+    quantity: 1
+    unit: set
+    scaling: per_vehicle
+    criticality: essential
+    weight_g: 1000
+    notes: Being struck while stopped on a shoulder is the dominant roadside hazard.
+
+  - id: high-vis-vest
+    name: High-visibility vest
+    category: clothing
+    quantity: 1
+    unit: ea
+    scaling: per_vehicle
+    criticality: recommended
+    weight_g: 150
+
+  - id: fire-extinguisher-auto
+    name: Automotive fire extinguisher
+    category: security
+    quantity: 1
+    unit: ea
+    scaling: per_vehicle
+    criticality: recommended
+    weight_g: 1500
+    consumable:
+      check_interval_months: 12
+      rotation_policy: test_and_replace
+      degrades_without_expiry: true
+
+  - id: window-tool
+    name: Seatbelt cutter and window breaker
+    category: tools
+    quantity: 1
+    unit: ea
+    scaling: per_vehicle
+    criticality: recommended
+    weight_g: 100
+    notes: >
+      Only useful if mounted within reach of the driver's seat. Stored in the
+      trunk it does nothing, which is where most of them end up.
+
+  - id: ice-scraper
+    name: Ice scraper and snow brush
+    category: tools
+    quantity: 1
+    unit: ea
+    scaling: per_vehicle
+    criticality: recommended
+    weight_g: 400
+    notes: Cold-climate line. Drop it in consistently warm regions.
+
+  - id: traction-aid
+    name: Traction aid
+    category: tools
+    quantity: 1
+    unit: set
+    scaling: per_vehicle
+    criticality: optional
+    weight_g: 3000
+    notes: Sand, cat litter, or traction mats. Cold-climate line.
+
+  - id: shovel
+    name: Compact shovel
+    category: tools
+    quantity: 1
+    unit: ea
+    scaling: per_vehicle
+    criticality: optional
+    weight_g: 1200
+    notes: >
+      Cold-climate line, and the one that addresses the specific carbon monoxide
+      risk noted above: clearing the exhaust before idling for heat.
+
+  - id: vehicle-fluids
+    name: Spare vehicle fluids
+    category: tools
+    quantity: 1
+    unit: set
+    scaling: per_vehicle
+    criticality: optional
+    consumable:
+      shelf_life_months: 24
+      rotation_policy: replace_on_expiry
+    notes: Oil, coolant, washer fluid appropriate to the vehicle.
+
+  - id: vehicle-documents
+    name: Registration, insurance, and roadside contacts
+    category: documents
+    quantity: 1
+    unit: set
+    scaling: per_vehicle
+    criticality: essential
+    consumable:
+      check_interval_months: 12
+    notes: >
+      Insurance cards and registrations expire annually and are the single most
+      commonly out-of-date item in any vehicle kit.
+
+skills:
+  - name: Changing a tire unassisted
+    criticality: essential
+    notes: Practice once in daylight in a driveway, not for the first time on a shoulder at night.
+  - name: Jump-starting safely
+    criticality: recommended
+  - name: Recognizing carbon monoxide risk when idling for heat
+    criticality: essential
+
+tags: [vehicle, roadside, mobile-base]
+
+source:
+  author: PrepKit contributors
+  license: CC0-1.0
+  permission_status: original
+  derived_from: >
+    Generic vehicle emergency kit composition following commonly published
+    roadside and cold-weather guidance. Item types only; no curated product list
+    from any third party.

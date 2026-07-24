@@ -1,0 +1,397 @@
+spec_version: "0.1"
+id: get-home-bag-urban
+name: Urban Get-Home Bag
+summary: >
+  A single-purpose kit for one problem: you are away from home when something
+  happens, and you need to travel back on foot. Not a bug-out bag and not a
+  survival kit. Sized for roughly one day of self-sufficiency and a walk of up
+  to about 25 km through developed terrain.
+
+layer: offsite
+duration: 72h
+
+container:
+  type: backpack
+  capacity_l: 20
+  target_weight_kg: 6
+  notes: >
+    Non-tactical appearance is a deliberate choice, not an aesthetic one. A bag
+    that reads as ordinary commuter kit attracts less attention in a crowd, which
+    is the operative concern in an urban movement problem. The weight ceiling
+    matters more than the contents list: a bag heavy enough to be left at the
+    desk has failed regardless of what is in it.
+
+assumptions:
+  persons: 1
+  pets: 0
+  climate: temperate
+  environment: urban
+  mobility: on_foot
+  notes: >
+    Assumes the route home is walkable within a day and that the destination is
+    intact and stocked. If either assumption fails, this is the wrong kit and you
+    want an evacuation-layer kit instead. Cold or hot-arid climates need
+    substantial changes to the water and clothing lines.
+
+items:
+  # --- water -------------------------------------------------------------
+  - id: water-carried
+    name: Carried water
+    category: water
+    quantity: 1.5
+    unit: l
+    scaling: fixed
+    criticality: essential
+    weight_g: 1500
+    consumable:
+      shelf_life_months: 12
+      rotation_policy: fifo
+      check_interval_months: 6
+    notes: >
+      Water is the heaviest thing here by a wide margin and the constraint the
+      whole kit is built around. Carrying a full day's supply is not realistic on
+      foot, so this pairs a modest carry with a treatment method.
+
+  - id: water-filter
+    name: Compact water filter
+    category: water
+    quantity: 1
+    unit: ea
+    scaling: fixed
+    criticality: essential
+    weight_g: 80
+    redundancy_group: water-treatment
+    notes: Extends range far more cheaply, by weight, than carrying more water.
+
+  - id: purification-tablets
+    name: Purification tablets
+    category: water
+    quantity: 1
+    unit: set
+    scaling: fixed
+    criticality: recommended
+    weight_g: 20
+    redundancy_group: water-treatment
+    consumable:
+      shelf_life_months: 48
+      rotation_policy: replace_on_expiry
+    notes: Near-zero weight, unrelated failure mode from the filter. Cheap redundancy.
+
+  # --- food --------------------------------------------------------------
+  - id: trail-food
+    name: No-cook calorie-dense food
+    category: food
+    quantity: 1200
+    unit: kcal
+    scaling: fixed
+    criticality: recommended
+    weight_g: 300
+    consumable:
+      shelf_life_months: 12
+      rotation_policy: fifo
+      check_interval_months: 6
+    notes: >
+      Enough to sustain effort and maintain decision quality on a long walk.
+      Recommended rather than essential: nobody dies on a one-day walk from
+      missing a meal, but judgment degrades measurably.
+
+  - id: electrolytes
+    name: Electrolyte supplement
+    category: food
+    quantity: 3
+    unit: dose
+    scaling: fixed
+    criticality: recommended
+    weight_g: 30
+    consumable:
+      shelf_life_months: 24
+      rotation_policy: replace_on_expiry
+
+  # --- footwear and clothing ---------------------------------------------
+  - id: walking-shoes
+    name: Walking shoes and socks
+    category: clothing
+    quantity: 1
+    unit: pair
+    scaling: fixed
+    criticality: essential
+    weight_g: 900
+    notes: >
+      The single highest-value item in this bag. Dress shoes end a long walk
+      early, and a blister at kilometre five is a genuine mobility failure.
+      If the bag lives at a desk, this is what earns its space.
+
+  - id: spare-socks
+    name: Spare socks
+    category: clothing
+    quantity: 1
+    unit: pair
+    scaling: fixed
+    criticality: recommended
+    weight_g: 60
+
+  - id: rain-shell
+    name: Packable rain shell
+    category: clothing
+    quantity: 1
+    unit: ea
+    scaling: fixed
+    criticality: essential
+    weight_g: 250
+    notes: Wet plus wind is a hypothermia path even in mild temperatures.
+
+  - id: warm-layer
+    name: Insulating layer
+    category: clothing
+    quantity: 1
+    unit: ea
+    scaling: fixed
+    criticality: recommended
+    weight_g: 350
+
+  - id: hat-gloves
+    name: Hat and gloves
+    category: clothing
+    quantity: 1
+    unit: set
+    scaling: fixed
+    criticality: recommended
+    weight_g: 120
+
+  - id: dust-mask
+    name: N95 or equivalent respirator
+    category: clothing
+    quantity: 2
+    unit: ea
+    scaling: fixed
+    criticality: recommended
+    weight_g: 20
+    consumable:
+      shelf_life_months: 60
+      degrades_without_expiry: true
+      check_interval_months: 24
+
+  # --- navigation --------------------------------------------------------
+  - id: paper-map
+    name: Paper map of the home area
+    category: navigation
+    quantity: 1
+    unit: ea
+    scaling: fixed
+    criticality: essential
+    weight_g: 50
+    consumable:
+      check_interval_months: 24
+    notes: >
+      Marked with your route home and at least one alternate. Phone navigation
+      assumes the two things least likely to survive: a charged battery and a
+      working network.
+
+  - id: compass
+    name: Compass
+    category: navigation
+    quantity: 1
+    unit: ea
+    scaling: fixed
+    criticality: recommended
+    weight_g: 30
+
+  - id: route-plan
+    name: Written route and rendezvous plan
+    category: documents
+    quantity: 1
+    unit: ea
+    scaling: fixed
+    criticality: essential
+    weight_g: 10
+    consumable:
+      check_interval_months: 12
+    notes: >
+      Primary and alternate routes, hazards to avoid, and where household members
+      expect to meet. Review annually: construction, closures, and moves quietly
+      invalidate a plan written years ago.
+
+  # --- light and power ---------------------------------------------------
+  - id: flashlight
+    name: Flashlight
+    category: power
+    quantity: 1
+    unit: ea
+    scaling: fixed
+    criticality: essential
+    weight_g: 90
+    redundancy_group: lighting
+
+  - id: headlamp
+    name: Headlamp
+    category: power
+    quantity: 1
+    unit: ea
+    scaling: fixed
+    criticality: recommended
+    weight_g: 80
+    redundancy_group: lighting
+    notes: Walking after dark with hands free is materially safer than holding a light.
+
+  - id: spare-batteries
+    name: Spare batteries
+    category: power
+    quantity: 1
+    unit: set
+    scaling: fixed
+    criticality: recommended
+    weight_g: 60
+    consumable:
+      shelf_life_months: 60
+      rotation_policy: test_and_replace
+      check_interval_months: 12
+
+  - id: power-bank
+    name: Power bank and cable
+    category: power
+    quantity: 1
+    unit: ea
+    scaling: fixed
+    criticality: essential
+    weight_g: 250
+    consumable:
+      rotation_policy: test_and_replace
+      check_interval_months: 3
+      degrades_without_expiry: true
+    notes: Check the charge quarterly. A depleted power bank is dead weight.
+
+  # --- first aid and hygiene ---------------------------------------------
+  - id: compact-first-aid
+    name: Compact first aid kit
+    category: first_aid
+    quantity: 1
+    unit: ea
+    scaling: fixed
+    criticality: essential
+    weight_g: 300
+    consumable:
+      check_interval_months: 12
+      degrades_without_expiry: true
+    notes: Weight it toward blister care and wound management, which is what a long walk produces.
+
+  - id: personal-medication
+    name: Personal medication, 24h
+    category: first_aid
+    quantity: 1
+    unit: day
+    scaling: fixed
+    criticality: essential
+    weight_g: 30
+    consumable:
+      rotation_policy: fifo
+      check_interval_months: 3
+    notes: >
+      If you depend on a daily medication, this is an essential line and not an
+      optional one. Rotate it on a real schedule so it never expires in the bag.
+
+  - id: hygiene-minimal
+    name: Minimal hygiene kit
+    category: hygiene
+    quantity: 1
+    unit: set
+    scaling: fixed
+    criticality: recommended
+    weight_g: 150
+
+  # --- tools -------------------------------------------------------------
+  - id: multi-tool
+    name: Multi-tool or folding knife
+    category: tools
+    quantity: 1
+    unit: ea
+    scaling: fixed
+    criticality: recommended
+    weight_g: 150
+    regulatory_note: >
+      Blade length limits, locking mechanisms, and carry rules vary considerably
+      between jurisdictions, and workplace policy may be stricter still. Check
+      what applies where this bag is actually stored and carried.
+
+  - id: work-gloves
+    name: Gloves
+    category: tools
+    quantity: 1
+    unit: pair
+    scaling: fixed
+    criticality: recommended
+    weight_g: 100
+    notes: Debris and broken glass are the routine urban hazard after an event.
+
+  - id: duct-tape
+    name: Duct tape, flat-wound
+    category: tools
+    quantity: 1
+    unit: ea
+    scaling: fixed
+    criticality: optional
+    weight_g: 50
+
+  - id: emergency-blanket
+    name: Emergency bivvy or blanket
+    category: shelter
+    quantity: 1
+    unit: ea
+    scaling: fixed
+    criticality: recommended
+    weight_g: 100
+    notes: For an unplanned stop, an injury wait, or an overnight the plan did not include.
+
+  # --- personal ----------------------------------------------------------
+  - id: cash-small-bills
+    name: Cash in small bills
+    category: personal
+    quantity: 1
+    unit: set
+    scaling: fixed
+    criticality: recommended
+    weight_g: 20
+
+  - id: id-copies
+    name: Copies of identification
+    category: documents
+    quantity: 1
+    unit: set
+    scaling: fixed
+    criticality: recommended
+    weight_g: 20
+    consumable:
+      check_interval_months: 12
+    notes: Keep these secured; a bag left in a car or at a desk is not a safe store for originals.
+
+  - id: whistle
+    name: Whistle
+    category: comms
+    quantity: 1
+    unit: ea
+    scaling: fixed
+    criticality: recommended
+    weight_g: 10
+
+skills:
+  - name: Walking your primary route once, fully loaded
+    criticality: essential
+    notes: >
+      The only reliable way to discover that the shoes rub, the bag is too heavy,
+      or the route is impassable. Rehearsal converts a list into a plan.
+  - name: Blister prevention and treatment
+    criticality: essential
+  - name: Map and compass navigation without GPS
+    criticality: recommended
+  - name: Situational awareness in crowds
+    criticality: recommended
+
+tags: [get-home, urban, on-foot, commuter]
+
+source:
+  author: PrepKit contributors
+  license: CC0-1.0
+  permission_status: original
+  derived_from: >
+    Generic get-home-bag composition following commonly published principles for
+    urban on-foot return. Item types only; no curated product list from any
+    third party.

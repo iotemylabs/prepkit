@@ -1,0 +1,403 @@
+spec_version: "0.1"
+id: home-72hr-baseline
+name: 72-Hour Home Base Kit
+summary: >
+  The first tier of home-base preparedness: shelter in place for three days without
+  utilities, resupply, or outside help. Sized per person per day where consumables
+  are concerned. This is the kit almost everyone should build before any other.
+
+layer: home
+duration: 72h
+
+assumptions:
+  persons: 1
+  pets: 0
+  climate: any
+  environment: any
+  mobility: stationary
+  notes: >
+    Sized for one person; instantiate against your real household and let per_person
+    scaling do the multiplication. Assumes you stay in the dwelling and that the
+    dwelling remains structurally sound. Assumes grid power and municipal water are
+    both unavailable, which is the common case in the events this tier addresses.
+
+items:
+  # --- water -------------------------------------------------------------
+  - id: stored-drinking-water
+    name: Stored potable water
+    category: water
+    quantity: 4
+    unit: l
+    scaling: per_person_per_day
+    criticality: essential
+    weight_g: 4000
+    consumable:
+      shelf_life_months: 12
+      rotation_policy: fifo
+      check_interval_months: 6
+    notes: >
+      A frequently cited planning figure is one gallon (about 3.8 L) per person per
+      day, covering drinking plus minimal hygiene. This template rounds to 4 L.
+      Hot climates, nursing parents, and anyone ill will need more; the figure is a
+      floor, not a target. Commercially sealed water keeps far longer than
+      home-filled containers, which should be rotated on the interval above.
+
+  - id: water-purification
+    name: Water purification method
+    category: water
+    quantity: 1
+    unit: ea
+    scaling: per_household
+    criticality: essential
+    redundancy_group: water-treatment
+    notes: >
+      Filter, chemical tablets, or the means to boil. Stored water runs out; a
+      treatment method is what extends this kit past its nominal duration.
+
+  - id: water-purification-backup
+    name: Backup purification method (different mechanism)
+    category: water
+    quantity: 1
+    unit: ea
+    scaling: per_household
+    criticality: recommended
+    redundancy_group: water-treatment
+    notes: >
+      Deliberately a different mechanism from the primary. A filter clogs, tablets
+      expire, a stove runs out of fuel; the failure modes are unrelated, which is
+      the point.
+
+  # --- food --------------------------------------------------------------
+  - id: shelf-stable-food
+    name: Shelf-stable food requiring no cooking
+    category: food
+    quantity: 2000
+    unit: kcal
+    scaling: per_person_per_day
+    criticality: essential
+    consumable:
+      shelf_life_months: 24
+      rotation_policy: fifo
+      check_interval_months: 6
+    notes: >
+      No-cook is the requirement: assume no working stove. Prefer food the household
+      actually eats, so it rotates through normal use instead of being discarded.
+      Adjust the calorie figure for children, and upward for cold weather or exertion.
+
+  - id: manual-can-opener
+    name: Manual can opener
+    category: cooking
+    quantity: 1
+    unit: ea
+    scaling: per_household
+    criticality: essential
+    weight_g: 100
+    notes: A trivially cheap item that renders a large share of stored food useless if absent.
+
+  - id: pet-food
+    name: Pet food and water
+    category: food
+    quantity: 3
+    unit: day
+    scaling: per_pet
+    criticality: essential
+    consumable:
+      shelf_life_months: 12
+      rotation_policy: fifo
+    notes: Quantity is days of supply per animal. Remove this line if the household has no pets.
+
+  # --- first aid ---------------------------------------------------------
+  - id: first-aid-kit
+    name: Stocked first aid kit
+    category: first_aid
+    quantity: 1
+    unit: ea
+    scaling: per_household
+    criticality: essential
+    weight_g: 800
+    consumable:
+      check_interval_months: 12
+      degrades_without_expiry: true
+    notes: >
+      Adhesive bandages, gauze, tape, antiseptic, gloves, trauma shears. Adhesives
+      and ointments degrade well before anything printed on the box suggests, hence
+      the inspection interval.
+
+  - id: prescription-medication
+    name: Prescription medication reserve
+    category: first_aid
+    quantity: 7
+    unit: day
+    scaling: per_person
+    criticality: essential
+    consumable:
+      rotation_policy: fifo
+      check_interval_months: 3
+    notes: >
+      Days of supply beyond daily use. Building a reserve depends on refill timing
+      and what the prescriber and insurer permit, so this is a planning target
+      rather than something to be assembled in one purchase. Discuss with the
+      prescribing clinician; do not stockpile by skipping doses.
+
+  - id: otc-medication
+    name: Over-the-counter medication
+    category: first_aid
+    quantity: 1
+    unit: set
+    scaling: per_household
+    criticality: recommended
+    consumable:
+      shelf_life_months: 36
+      rotation_policy: replace_on_expiry
+    notes: Analgesic, antihistamine, anti-diarrheal, rehydration salts.
+
+  # --- power and light ---------------------------------------------------
+  - id: flashlight
+    name: Flashlight
+    category: power
+    quantity: 1
+    unit: ea
+    scaling: per_person
+    criticality: essential
+    weight_g: 150
+    redundancy_group: lighting
+
+  - id: headlamp
+    name: Headlamp
+    category: power
+    quantity: 1
+    unit: ea
+    scaling: per_household
+    criticality: recommended
+    weight_g: 90
+    redundancy_group: lighting
+    notes: Hands-free light is a different capability from a handheld, not a duplicate of it.
+
+  - id: spare-batteries
+    name: Spare batteries
+    category: power
+    quantity: 1
+    unit: set
+    scaling: per_household
+    criticality: essential
+    consumable:
+      shelf_life_months: 60
+      rotation_policy: test_and_replace
+      check_interval_months: 12
+    notes: >
+      Match the chemistry and size your lights actually take. Lithium primaries
+      store far longer than alkaline and do not leak, which matters for a kit that
+      may sit untouched for years.
+
+  - id: power-bank
+    name: Charged power bank
+    category: power
+    quantity: 1
+    unit: ea
+    scaling: per_household
+    criticality: recommended
+    weight_g: 350
+    consumable:
+      rotation_policy: test_and_replace
+      check_interval_months: 3
+      degrades_without_expiry: true
+    notes: Self-discharges. Useless if last topped up two years ago, hence the short check interval.
+
+  # --- comms -------------------------------------------------------------
+  - id: emergency-radio
+    name: Battery or hand-crank radio
+    category: comms
+    quantity: 1
+    unit: ea
+    scaling: per_household
+    criticality: essential
+    weight_g: 400
+    notes: >
+      Broadcast reception is the one information channel that survives when cell
+      and internet do not. A model receiving NOAA weather bands is worth preferring
+      in the US.
+
+  - id: written-contact-list
+    name: Written emergency contact list
+    category: comms
+    quantity: 1
+    unit: ea
+    scaling: per_person
+    criticality: essential
+    weight_g: 10
+    notes: >
+      On paper. Almost nobody can recite the numbers they depend on, and a dead
+      phone takes the whole contact list with it. Include an out-of-area contact:
+      local circuits congest first, so a distant relay often works when local
+      calls will not.
+
+  - id: whistle
+    name: Whistle
+    category: comms
+    quantity: 1
+    unit: ea
+    scaling: per_person
+    criticality: recommended
+    weight_g: 10
+
+  # --- shelter and warmth ------------------------------------------------
+  - id: blankets
+    name: Blankets or sleeping bags
+    category: shelter
+    quantity: 1
+    unit: ea
+    scaling: per_person
+    criticality: essential
+    notes: >
+      A powerless dwelling in winter becomes a cold-exposure problem within hours.
+      This line does more life-saving work in most real events than any tool in the kit.
+
+  - id: plastic-sheeting-tape
+    name: Plastic sheeting and duct tape
+    category: shelter
+    quantity: 1
+    unit: set
+    scaling: per_household
+    criticality: recommended
+    notes: Covering broken windows, isolating a room to conserve heat, improvised repair.
+
+  # --- sanitation --------------------------------------------------------
+  - id: sanitation-kit
+    name: Emergency sanitation supplies
+    category: hygiene
+    quantity: 1
+    unit: set
+    scaling: per_household
+    criticality: essential
+    notes: >
+      Heavy-duty bags, a bucket, and a way to seal waste, for when plumbing is out.
+      Consistently the least-planned-for and most immediately miserable failure in
+      real events, and a genuine disease vector once it goes on for days.
+
+  - id: hygiene-supplies
+    name: Personal hygiene supplies
+    category: hygiene
+    quantity: 3
+    unit: day
+    scaling: per_person
+    criticality: recommended
+    consumable:
+      rotation_policy: use_and_replace
+      check_interval_months: 12
+
+  - id: hand-sanitizer
+    name: Hand sanitizer and soap
+    category: hygiene
+    quantity: 1
+    unit: set
+    scaling: per_household
+    criticality: essential
+    consumable:
+      shelf_life_months: 36
+      rotation_policy: replace_on_expiry
+
+  # --- tools and documents -----------------------------------------------
+  - id: multi-tool
+    name: Multi-tool
+    category: tools
+    quantity: 1
+    unit: ea
+    scaling: per_household
+    criticality: recommended
+    weight_g: 250
+
+  - id: utility-shutoff-tool
+    name: Utility shutoff tool
+    category: tools
+    quantity: 1
+    unit: ea
+    scaling: per_household
+    criticality: essential
+    weight_g: 300
+    notes: >
+      Whatever your gas and water shutoffs actually require, stored where the
+      shutoff is. Verify it fits before you need it; this is a one-minute check
+      that people routinely skip.
+
+  - id: fire-extinguisher
+    name: Fire extinguisher
+    category: security
+    quantity: 1
+    unit: ea
+    scaling: per_household
+    criticality: essential
+    consumable:
+      check_interval_months: 12
+      rotation_policy: test_and_replace
+      degrades_without_expiry: true
+    notes: >
+      Household fire risk rises sharply during outages, because people turn to
+      candles, portable heaters, and unfamiliar cooking methods.
+
+  - id: cash-small-bills
+    name: Cash in small bills
+    category: personal
+    quantity: 1
+    unit: set
+    scaling: per_household
+    criticality: recommended
+    notes: Card networks and ATMs depend on the same power and connectivity that just failed.
+
+  - id: document-copies
+    name: Copies of critical documents
+    category: documents
+    quantity: 1
+    unit: set
+    scaling: per_household
+    criticality: essential
+    consumable:
+      check_interval_months: 12
+    notes: >
+      Identity, insurance, medical, property. Store encrypted if digital and secured
+      if physical; this is the single highest-sensitivity component of any kit.
+
+  - id: n95-masks
+    name: N95 or equivalent respirators
+    category: clothing
+    quantity: 2
+    unit: ea
+    scaling: per_person
+    criticality: recommended
+    consumable:
+      shelf_life_months: 60
+      check_interval_months: 24
+      degrades_without_expiry: true
+    notes: Smoke, dust, and post-event debris are the common cases, more so than disease.
+
+  - id: work-gloves
+    name: Work gloves
+    category: clothing
+    quantity: 1
+    unit: pair
+    scaling: per_person
+    criticality: recommended
+
+skills:
+  - name: Shutting off household gas, water, and electricity
+    criticality: essential
+    notes: Locate every shutoff and confirm your tool fits it, before an emergency.
+  - name: Basic first aid and bleeding control
+    criticality: essential
+  - name: Safe use of your chosen water treatment method
+    criticality: essential
+  - name: Fire extinguisher operation
+    criticality: recommended
+  - name: Household emergency plan rehearsal
+    criticality: recommended
+    notes: A plan never practiced is an assumption, not a plan.
+
+tags: [beginner, shelter-in-place, foundational]
+
+source:
+  author: PrepKit contributors
+  license: CC0-1.0
+  permission_status: original
+  derived_from: >
+    Composed from widely published general public-guidance categories for
+    three-day home emergency supplies. Generic item types and category structure
+    only; contains no curated product list from any third party.
