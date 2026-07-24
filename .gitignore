@@ -1,0 +1,10 @@
+# Build outputs
+/prepkit
+/prepkit.exe
+/dist/
+
+# Runtime data (never commit a populated database)
+/data/
+*.db
+*.db-wal
+*.db-shm
