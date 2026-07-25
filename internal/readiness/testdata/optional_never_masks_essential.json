@@ -1,0 +1,30 @@
+{
+  "description": "The rule that matters most: a kit with every optional item and no water must not look prepared. Essential coverage is zero and the kit is incomplete no matter how rich the optional coverage is.",
+  "now": "2026-07-24",
+  "template": {
+    "spec_version": "0.1",
+    "id": "t-mask",
+    "name": "Mask test",
+    "layer": "home",
+    "items": [
+      {"id": "water", "name": "Stored water", "category": "water", "quantity": 4, "unit": "l", "criticality": "essential"},
+      {"id": "opt1", "name": "Camp chair", "category": "personal", "quantity": 1, "unit": "ea", "criticality": "optional"},
+      {"id": "opt2", "name": "Board game", "category": "personal", "quantity": 1, "unit": "ea", "criticality": "optional"},
+      {"id": "opt3", "name": "Spare paracord", "category": "tools", "quantity": 1, "unit": "ea", "criticality": "optional"}
+    ]
+  },
+  "kit": {"id": "k1", "name": "Gadget kit"},
+  "items": [
+    {"id": "i1", "name": "Camp chair", "category": "personal", "template_item_id": "opt1", "quantity": 1, "unit": "ea"},
+    {"id": "i2", "name": "Board game", "category": "personal", "template_item_id": "opt2", "quantity": 1, "unit": "ea"},
+    {"id": "i3", "name": "Paracord", "category": "tools", "template_item_id": "opt3", "quantity": 1, "unit": "ea"}
+  ],
+  "expect": {
+    "incomplete": true,
+    "essential": {"covered": 0, "total": 1},
+    "optional": {"covered": 3, "total": 3},
+    "lines": {
+      "water": {"status": "missing"}
+    }
+  }
+}

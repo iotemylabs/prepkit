@@ -1,0 +1,44 @@
+{
+  "description": "The multiplier table: per_person by headcount, per_person_per_day by headcount times duration days, per_pet by pets (zero pets makes the line not applicable and excluded from totals), per_vehicle and per_household are 1.",
+  "now": "2026-07-24",
+  "template": {
+    "spec_version": "0.1",
+    "id": "t-scale",
+    "name": "Scaling test",
+    "layer": "home",
+    "duration": "72h",
+    "items": [
+      {"id": "pp", "name": "Blanket", "category": "shelter", "quantity": 1, "unit": "ea", "scaling": "per_person", "criticality": "essential"},
+      {"id": "ppd", "name": "Stored water", "category": "water", "quantity": 4, "unit": "l", "scaling": "per_person_per_day", "criticality": "essential"},
+      {"id": "pet", "name": "Pet food", "category": "food", "quantity": 3, "unit": "day", "scaling": "per_pet", "criticality": "essential"},
+      {"id": "veh", "name": "Road atlas", "category": "navigation", "quantity": 1, "unit": "ea", "scaling": "per_vehicle", "criticality": "recommended"},
+      {"id": "hh", "name": "Can opener", "category": "cooking", "quantity": 1, "unit": "ea", "scaling": "per_household", "criticality": "essential"}
+    ]
+  },
+  "household": {
+    "persons": [
+      {"id": "p1", "label": "parent 1"},
+      {"id": "p2", "label": "parent 2"},
+      {"id": "p3", "label": "youngest"}
+    ],
+    "pets": 0
+  },
+  "kit": {"id": "k1", "name": "Home kit", "duration": "72h", "last_verified": "2026-06-01"},
+  "items": [
+    {"id": "i-pp", "name": "Blankets", "category": "shelter", "template_item_id": "pp", "quantity": 3, "unit": "ea"},
+    {"id": "i-ppd", "name": "Water", "category": "water", "template_item_id": "ppd", "quantity": 20, "unit": "l"},
+    {"id": "i-hh", "name": "Opener", "category": "cooking", "template_item_id": "hh", "quantity": 1, "unit": "ea"}
+  ],
+  "expect": {
+    "incomplete": true,
+    "essential": {"covered": 2, "total": 3},
+    "recommended": {"covered": 0, "total": 1},
+    "lines": {
+      "pp": {"status": "covered", "scaled_target": 3},
+      "ppd": {"status": "partial", "scaled_target": 36, "valid_quantity": 20},
+      "pet": {"status": "not_applicable", "scaled_target": 0},
+      "veh": {"status": "missing", "scaled_target": 1},
+      "hh": {"status": "covered", "scaled_target": 1}
+    }
+  }
+}

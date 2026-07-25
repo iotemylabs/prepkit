@@ -1,0 +1,29 @@
+{
+  "description": "An indefinite-duration kit has no defined day count: per_person_per_day lines are unscored and say so, excluded from the totals rather than given an invented number. Fixed lines still score normally.",
+  "now": "2026-07-24",
+  "template": {
+    "spec_version": "0.1",
+    "id": "t-indef",
+    "name": "Indefinite test",
+    "layer": "home",
+    "duration": "indefinite",
+    "items": [
+      {"id": "water", "name": "Stored water", "category": "water", "quantity": 4, "unit": "l", "scaling": "per_person_per_day", "criticality": "essential"},
+      {"id": "food", "name": "Stored food", "category": "food", "quantity": 2000, "unit": "kcal", "scaling": "per_person_per_day", "criticality": "essential"},
+      {"id": "radio", "name": "Emergency radio", "category": "comms", "quantity": 1, "unit": "ea", "criticality": "essential"}
+    ]
+  },
+  "kit": {"id": "k1", "name": "Deep pantry", "duration": "indefinite", "last_verified": "2026-06-01"},
+  "items": [
+    {"id": "i-radio", "name": "Crank radio", "category": "comms", "template_item_id": "radio", "quantity": 1, "unit": "ea"}
+  ],
+  "expect": {
+    "incomplete": false,
+    "essential": {"covered": 1, "total": 1},
+    "lines": {
+      "water": {"status": "unscored"},
+      "food": {"status": "unscored"},
+      "radio": {"status": "covered"}
+    }
+  }
+}

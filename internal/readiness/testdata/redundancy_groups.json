@@ -1,0 +1,34 @@
+{
+  "description": "Redundancy groups report capability coverage without collapsing members: lighting is covered (one member) but not redundant, and the missing headlamp still shows as missing — the user asked for two means to make light. Water treatment with both members is redundant.",
+  "now": "2026-07-24",
+  "template": {
+    "spec_version": "0.1",
+    "id": "t-groups",
+    "name": "Group test",
+    "layer": "home",
+    "items": [
+      {"id": "flashlight", "name": "Flashlight", "category": "power", "quantity": 1, "unit": "ea", "criticality": "essential", "redundancy_group": "lighting"},
+      {"id": "headlamp", "name": "Headlamp", "category": "power", "quantity": 1, "unit": "ea", "criticality": "recommended", "redundancy_group": "lighting"},
+      {"id": "filter", "name": "Water filter", "category": "water", "quantity": 1, "unit": "ea", "criticality": "essential", "redundancy_group": "water-treatment"},
+      {"id": "tablets", "name": "Purification tablets", "category": "water", "quantity": 1, "unit": "set", "criticality": "recommended", "redundancy_group": "water-treatment"}
+    ]
+  },
+  "kit": {"id": "k1", "name": "Home kit", "last_verified": "2026-06-01"},
+  "items": [
+    {"id": "i-fl", "name": "Pocket light", "category": "power", "template_item_id": "flashlight", "quantity": 1, "unit": "ea"},
+    {"id": "i-filter", "name": "Squeeze filter", "category": "water", "template_item_id": "filter", "quantity": 1, "unit": "ea"},
+    {"id": "i-tabs", "name": "Tablets", "category": "water", "template_item_id": "tablets", "quantity": 1, "unit": "set"}
+  ],
+  "expect": {
+    "incomplete": false,
+    "essential": {"covered": 2, "total": 2},
+    "recommended": {"covered": 1, "total": 2},
+    "lines": {
+      "headlamp": {"status": "missing"}
+    },
+    "groups": {
+      "lighting": {"covered": true, "redundant": false},
+      "water-treatment": {"covered": true, "redundant": true}
+    }
+  }
+}

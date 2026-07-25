@@ -1,0 +1,28 @@
+{
+  "description": "No unit conversion in Phase 1: an item recorded in gallons against a template line in litres contributes nothing and attaches a warning, rather than silently adding gallons to litres. An item with no unit recorded is taken as matching the template's.",
+  "now": "2026-07-24",
+  "template": {
+    "spec_version": "0.1",
+    "id": "t-units",
+    "name": "Unit test",
+    "layer": "home",
+    "items": [
+      {"id": "water", "name": "Stored water", "category": "water", "quantity": 8, "unit": "l", "criticality": "essential"},
+      {"id": "rope", "name": "Cordage", "category": "tools", "quantity": 10, "unit": "m", "criticality": "recommended"}
+    ]
+  },
+  "kit": {"id": "k1", "name": "Home kit", "last_verified": "2026-06-01"},
+  "items": [
+    {"id": "i-gal", "name": "Water in gallons", "category": "water", "template_item_id": "water", "quantity": 4, "unit": "gal"},
+    {"id": "i-unitless", "name": "Unlabeled cordage", "category": "tools", "template_item_id": "rope", "quantity": 10}
+  ],
+  "expect": {
+    "incomplete": true,
+    "essential": {"covered": 0, "total": 1},
+    "recommended": {"covered": 1, "total": 1},
+    "lines": {
+      "water": {"status": "missing", "valid_quantity": 0, "warnings_contain": ["unit \"gal\" does not match template unit \"l\""]},
+      "rope": {"status": "covered", "valid_quantity": 10}
+    }
+  }
+}

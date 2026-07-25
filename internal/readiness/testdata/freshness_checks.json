@@ -1,0 +1,41 @@
+{
+  "description": "Interval-based check tracking, the only mechanism that catches degrades_without_expiry items. Anchor precedence: latest qualifying maintenance event, else acquired date, else never-checked and overdue outright. A lot's own next_check also flags. The kit itself is unverified after the default 12 months.",
+  "now": "2026-07-24",
+  "template": {
+    "spec_version": "0.1",
+    "id": "t-fresh",
+    "name": "Freshness test",
+    "layer": "vehicle",
+    "items": [
+      {"id": "recent", "name": "Recently checked bank", "category": "power", "quantity": 1, "unit": "ea", "criticality": "essential",
+       "consumable": {"check_interval_months": 6, "degrades_without_expiry": true}},
+      {"id": "stale", "name": "Long-unchecked jump pack", "category": "tools", "quantity": 1, "unit": "ea", "criticality": "essential",
+       "consumable": {"check_interval_months": 3, "degrades_without_expiry": true}},
+      {"id": "never", "name": "Never-checked extinguisher", "category": "security", "quantity": 1, "unit": "ea", "criticality": "recommended",
+       "consumable": {"check_interval_months": 12, "degrades_without_expiry": true}},
+      {"id": "acquired-anchor", "name": "Tire kit anchored by purchase", "category": "tools", "quantity": 1, "unit": "ea", "criticality": "recommended",
+       "consumable": {"check_interval_months": 6}},
+      {"id": "dated", "name": "Stored water", "category": "water", "quantity": 4, "unit": "l", "criticality": "essential",
+       "consumable": {"shelf_life_months": 6, "check_interval_months": 3}}
+    ]
+  },
+  "kit": {"id": "k1", "name": "Vehicle kit", "last_verified": "2023-05-01"},
+  "items": [
+    {"id": "i-recent", "name": "Power bank", "category": "power", "template_item_id": "recent", "quantity": 1, "unit": "ea"},
+    {"id": "i-stale", "name": "Jump pack", "category": "tools", "template_item_id": "stale", "quantity": 1, "unit": "ea", "acquired": "2024-01-01"},
+    {"id": "i-never", "name": "Extinguisher", "category": "security", "template_item_id": "never", "quantity": 1, "unit": "ea"},
+    {"id": "i-acq", "name": "Plug kit", "category": "tools", "template_item_id": "acquired-anchor", "quantity": 1, "unit": "ea", "acquired": "2026-04-01"},
+    {"id": "i-dated", "name": "Water", "category": "water", "template_item_id": "dated", "unit": "l"}
+  ],
+  "lots": [
+    {"id": "lot-water", "item_id": "i-dated", "quantity": 4, "expires": "2026-12-01", "next_check": "2026-07-01"}
+  ],
+  "maintenance": [
+    {"id": "m1", "date": "2026-05-01", "kind": "function_test", "item_id": "i-recent"},
+    {"id": "m2", "date": "2025-01-10", "kind": "function_test", "item_id": "i-stale"}
+  ],
+  "expect": {
+    "check_overdue_items": ["i-stale", "i-never", "i-dated"],
+    "unverified": true
+  }
+}

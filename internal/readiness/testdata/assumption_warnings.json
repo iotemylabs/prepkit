@@ -1,0 +1,30 @@
+{
+  "description": "A household that differs materially from the template's assumptions gets warnings attached to the report: scaling adjusts for headcount and duration only, and silently rescaling a temperate urban template for a cold rural household produces a confident wrong answer.",
+  "now": "2026-07-24",
+  "template": {
+    "spec_version": "0.1",
+    "id": "t-assume",
+    "name": "Assumption test",
+    "layer": "offsite",
+    "assumptions": {"persons": 1, "climate": "temperate", "environment": "urban", "mobility": "on_foot"},
+    "items": [
+      {"id": "water", "name": "Carried water", "category": "water", "quantity": 1.5, "unit": "l", "criticality": "essential"}
+    ]
+  },
+  "household": {
+    "persons": [{"id": "p1", "label": "me"}],
+    "climate": "cold",
+    "environment": "rural"
+  },
+  "kit": {"id": "k1", "name": "Get-home bag", "last_verified": "2026-06-01"},
+  "items": [
+    {"id": "i-w", "name": "Bottle", "category": "water", "template_item_id": "water", "quantity": 1.5, "unit": "l"}
+  ],
+  "expect": {
+    "incomplete": false,
+    "warnings_contain": [
+      "climate \"cold\" differs from the template's assumed climate \"temperate\"",
+      "environment \"rural\" differs from the template's assumed environment \"urban\""
+    ]
+  }
+}

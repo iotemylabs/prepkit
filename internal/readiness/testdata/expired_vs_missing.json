@@ -1,0 +1,37 @@
+{
+  "description": "Expired water and no water are different situations. Both lines score as uncovered, but the expired stock is reported on the line and in the freshness section rather than silently vanishing.",
+  "now": "2026-07-24",
+  "template": {
+    "spec_version": "0.1",
+    "id": "t-exp",
+    "name": "Expiry test",
+    "layer": "home",
+    "items": [
+      {"id": "water", "name": "Stored water", "category": "water", "quantity": 6, "unit": "l", "criticality": "essential"},
+      {"id": "food", "name": "Rations", "category": "food", "quantity": 6, "unit": "ea", "criticality": "essential"},
+      {"id": "meds", "name": "OTC medication", "category": "first_aid", "quantity": 1, "unit": "set", "criticality": "recommended"}
+    ]
+  },
+  "kit": {"id": "k1", "name": "Pantry kit", "last_verified": "2026-06-01"},
+  "items": [
+    {"id": "i-water", "name": "Sealed water", "category": "water", "template_item_id": "water", "unit": "l"},
+    {"id": "i-meds", "name": "Med kit", "category": "first_aid", "template_item_id": "meds", "unit": "set"}
+  ],
+  "lots": [
+    {"id": "lot-old", "item_id": "i-water", "quantity": 6, "expires": "2026-01-01", "expiry_basis": "printed_best_by"},
+    {"id": "lot-soon", "item_id": "i-meds", "quantity": 1, "expires": "2026-08-15", "expiry_basis": "printed_exp"}
+  ],
+  "expect": {
+    "incomplete": true,
+    "essential": {"covered": 0, "total": 2},
+    "recommended": {"covered": 1, "total": 1},
+    "lines": {
+      "water": {"status": "missing", "valid_quantity": 0, "expired_quantity": 6},
+      "food": {"status": "missing", "valid_quantity": 0, "expired_quantity": 0},
+      "meds": {"status": "covered"}
+    },
+    "expired": ["lot-old"],
+    "expiring_soon": ["lot-soon"],
+    "unverified": false
+  }
+}

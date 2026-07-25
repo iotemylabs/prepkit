@@ -1,0 +1,31 @@
+{
+  "description": "A satisfied substitute counts the unsatisfied item as covered; an unsatisfied substitute does not. The pair contributes at most 1.0: the filter's coverage comes from the tablets without double-counting either line.",
+  "now": "2026-07-24",
+  "template": {
+    "spec_version": "0.1",
+    "id": "t-sub",
+    "name": "Substitute test",
+    "layer": "offsite",
+    "items": [
+      {"id": "filter", "name": "Water filter", "category": "water", "quantity": 1, "unit": "ea", "criticality": "essential", "substitutes": ["tablets"]},
+      {"id": "tablets", "name": "Purification tablets", "category": "water", "quantity": 1, "unit": "set", "criticality": "recommended"},
+      {"id": "knife", "name": "Folding knife", "category": "tools", "quantity": 1, "unit": "ea", "criticality": "recommended", "substitutes": ["multitool"]},
+      {"id": "multitool", "name": "Multi-tool", "category": "tools", "quantity": 1, "unit": "ea", "criticality": "recommended"}
+    ]
+  },
+  "kit": {"id": "k1", "name": "Get-home bag", "last_verified": "2026-06-01"},
+  "items": [
+    {"id": "i-tablets", "name": "Aquatabs", "category": "water", "template_item_id": "tablets", "quantity": 1, "unit": "set"}
+  ],
+  "expect": {
+    "incomplete": false,
+    "essential": {"covered": 1, "total": 1},
+    "recommended": {"covered": 1, "total": 3},
+    "lines": {
+      "filter": {"status": "covered_by_substitute", "covered_by": "tablets"},
+      "tablets": {"status": "covered", "ratio": 1},
+      "knife": {"status": "missing"},
+      "multitool": {"status": "missing"}
+    }
+  }
+}

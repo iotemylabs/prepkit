@@ -1,0 +1,27 @@
+{
+  "description": "Weight against a declared ceiling: item weights win, template per-line weights are the fallback, countable units multiply by quantity, and a non-optional item with no weight anywhere makes the estimate a floor. shoes 0.9 + water fallback 4.0 (litres: counted once) + bricks 3x1.0 = 7.9 kg over a 5 kg ceiling.",
+  "now": "2026-07-24",
+  "template": {
+    "spec_version": "0.1",
+    "id": "t-weight",
+    "name": "Weight test",
+    "layer": "offsite",
+    "container": {"type": "backpack", "target_weight_kg": 5},
+    "items": [
+      {"id": "shoes", "name": "Walking shoes", "category": "clothing", "quantity": 1, "unit": "pair", "criticality": "essential", "weight_g": 800},
+      {"id": "water", "name": "Carried water", "category": "water", "quantity": 4, "unit": "l", "criticality": "essential", "weight_g": 4000},
+      {"id": "bricks", "name": "Trauma supplies", "category": "first_aid", "quantity": 3, "unit": "ea", "criticality": "recommended", "weight_g": 500},
+      {"id": "mystery", "name": "Unweighed tool", "category": "tools", "quantity": 1, "unit": "ea", "criticality": "recommended"}
+    ]
+  },
+  "kit": {"id": "k1", "name": "Heavy bag", "last_verified": "2026-06-01"},
+  "items": [
+    {"id": "i-shoes", "name": "Trail runners", "category": "clothing", "template_item_id": "shoes", "quantity": 1, "unit": "pair", "weight_g": 900},
+    {"id": "i-water", "name": "Bottles", "category": "water", "template_item_id": "water", "quantity": 4, "unit": "l"},
+    {"id": "i-bricks", "name": "Trauma kit refills", "category": "first_aid", "template_item_id": "bricks", "quantity": 3, "unit": "ea", "weight_g": 1000},
+    {"id": "i-mystery", "name": "Odd tool", "category": "tools", "template_item_id": "mystery", "quantity": 1, "unit": "ea"}
+  ],
+  "expect": {
+    "weight": {"estimate_kg": 7.9, "over_ceiling": true, "is_floor": true}
+  }
+}

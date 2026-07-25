@@ -1,0 +1,25 @@
+{
+  "description": "A kit-wide maintenance event (kit_id set, no item or lot) anchors the check clock for every item in the kit: a repack touched everything. The item has no events of its own and no acquired date, but the recent repack keeps it from flagging; the kit is also freshly verified.",
+  "now": "2026-07-24",
+  "template": {
+    "spec_version": "0.1",
+    "id": "t-kitwide",
+    "name": "Kit-wide anchor test",
+    "layer": "home",
+    "items": [
+      {"id": "faid", "name": "First aid kit", "category": "first_aid", "quantity": 1, "unit": "ea", "criticality": "essential",
+       "consumable": {"check_interval_months": 6, "degrades_without_expiry": true}}
+    ]
+  },
+  "kit": {"id": "k1", "name": "Home kit", "last_verified": "2026-06-01"},
+  "items": [
+    {"id": "i-faid", "name": "IFAK", "category": "first_aid", "template_item_id": "faid", "quantity": 1, "unit": "ea"}
+  ],
+  "maintenance": [
+    {"id": "m1", "date": "2026-06-01", "kind": "repack", "kit_id": "k1"}
+  ],
+  "expect": {
+    "check_overdue_items": [],
+    "unverified": false
+  }
+}

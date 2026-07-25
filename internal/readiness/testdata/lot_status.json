@@ -1,0 +1,33 @@
+{
+  "description": "Lot statuses: sealed and opened lots count toward coverage; consumed, discarded, and rotated_out lots never do, and they don't appear in the freshness lists either. Multiple lots per item is the normal case — the two valid lots sum.",
+  "now": "2026-07-24",
+  "template": {
+    "spec_version": "0.1",
+    "id": "t-lots",
+    "name": "Lot status test",
+    "layer": "home",
+    "items": [
+      {"id": "chili", "name": "Canned chili", "category": "food", "quantity": 3, "unit": "ea", "criticality": "essential"}
+    ]
+  },
+  "kit": {"id": "k1", "name": "Pantry", "last_verified": "2026-06-01"},
+  "items": [
+    {"id": "i-chili", "name": "Chili", "category": "food", "template_item_id": "chili", "unit": "ea"}
+  ],
+  "lots": [
+    {"id": "lot-sealed", "item_id": "i-chili", "quantity": 2, "expires": "2027-03-01", "status": "sealed"},
+    {"id": "lot-opened", "item_id": "i-chili", "quantity": 1, "expires": "2027-08-01", "status": "opened"},
+    {"id": "lot-consumed", "item_id": "i-chili", "quantity": 5, "expires": "2027-03-01", "status": "consumed"},
+    {"id": "lot-discarded", "item_id": "i-chili", "quantity": 3, "expires": "2025-01-01", "status": "discarded"},
+    {"id": "lot-rotated", "item_id": "i-chili", "quantity": 2, "expires": "2025-06-01", "status": "rotated_out"}
+  ],
+  "expect": {
+    "incomplete": false,
+    "essential": {"covered": 1, "total": 1},
+    "lines": {
+      "chili": {"status": "covered", "valid_quantity": 3, "expired_quantity": 0}
+    },
+    "expired": [],
+    "expiring_soon": []
+  }
+}
