@@ -23,6 +23,7 @@ import (
 
 	"path/filepath"
 
+	"github.com/iotemylabs/prepkit/internal/export"
 	"github.com/iotemylabs/prepkit/internal/store"
 	"github.com/iotemylabs/prepkit/internal/template"
 	"github.com/iotemylabs/prepkit/templates"
@@ -47,7 +48,9 @@ func run(args []string) int {
 		return cmdServe(args)
 	case "validate":
 		return cmdValidate(args)
-	case "export-static", "export-json":
+	case "export-json":
+		return cmdExportJSON(args)
+	case "export-static":
 		fmt.Fprintf(os.Stderr, "prepkit %s: not implemented yet\n", cmd)
 		return 2
 	case "help":
@@ -195,6 +198,54 @@ func cmdValidate(args []string) int {
 		return 1
 	}
 	fmt.Println("All templates valid.")
+	return 0
+}
+
+// cmdExportJSON writes the full JSON export (inventory.schema.json) to a
+// file or stdout. Sensitive fields are excluded by default per the threat
+// model; -include-sensitive restores them for local backup, with a warning
+// naming exactly what that includes. Documents of kind identity, financial,
+// insurance, or medical never export under any flag.
+func cmdExportJSON(args []string) int {
+	fl := flag.NewFlagSet("export-json", flag.ExitOnError)
+	dataDir := fl.String("data-dir", "data", "directory containing the SQLite database")
+	out := fl.String("o", "", "output file (default stdout)")
+	includeSensitive := fl.Bool("include-sensitive", false,
+		"include serial numbers, costs, per-person needs, location notes, and documents regardless of export_ok (for local backup)")
+	fl.Parse(args)
+
+	db, err := store.Open(filepath.Join(*dataDir, "prepkit.db"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "prepkit: opening database: %v\n", err)
+		return 1
+	}
+	defer db.Close()
+
+	inv, err := db.Snapshot(context.Background())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "prepkit: reading inventory: %v\n", err)
+		return 1
+	}
+	if *includeSensitive {
+		fmt.Fprintln(os.Stderr, "prepkit: WARNING: this export includes serial numbers, costs, per-person needs,")
+		fmt.Fprintln(os.Stderr, "prepkit: location notes, and documents that did not opt in via export_ok.")
+		fmt.Fprintln(os.Stderr, "prepkit: Treat the file as confidential. Identity, financial, insurance, and")
+		fmt.Fprintln(os.Stderr, "prepkit: medical documents are never exported, even with this flag.")
+	}
+	b, err := export.JSON(*inv, time.Now(), export.Options{IncludeSensitive: *includeSensitive})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "prepkit: %v\n", err)
+		return 1
+	}
+	if *out == "" {
+		os.Stdout.Write(b)
+		return 0
+	}
+	if err := os.WriteFile(*out, b, 0o600); err != nil {
+		fmt.Fprintf(os.Stderr, "prepkit: writing %s: %v\n", *out, err)
+		return 1
+	}
+	fmt.Fprintf(os.Stderr, "prepkit: wrote %s\n", *out)
 	return 0
 }
 
