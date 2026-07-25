@@ -51,8 +51,7 @@ func run(args []string) int {
 	case "export-json":
 		return cmdExportJSON(args)
 	case "export-static":
-		fmt.Fprintf(os.Stderr, "prepkit %s: not implemented yet\n", cmd)
-		return 2
+		return cmdExportStatic(args)
 	case "help":
 		usage(os.Stdout)
 		return 0
@@ -246,6 +245,40 @@ func cmdExportJSON(args []string) int {
 		return 1
 	}
 	fmt.Fprintf(os.Stderr, "prepkit: wrote %s\n", *out)
+	return 0
+}
+
+// cmdExportStatic writes the offline HTML export: plain script-free pages
+// for e-ink readers and always-offline nodes. Sensitive fields are excluded
+// unconditionally on this path; documents appear only with their own
+// export_ok.
+func cmdExportStatic(args []string) int {
+	fl := flag.NewFlagSet("export-static", flag.ExitOnError)
+	dataDir := fl.String("data-dir", "data", "directory containing the SQLite database")
+	out := fl.String("o", "", "output directory for the static site (required, must be empty)")
+	fl.Parse(args)
+
+	if *out == "" {
+		fmt.Fprintln(os.Stderr, "prepkit export-static: -o <directory> is required")
+		return 2
+	}
+	db, err := store.Open(filepath.Join(*dataDir, "prepkit.db"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "prepkit: opening database: %v\n", err)
+		return 1
+	}
+	defer db.Close()
+
+	inv, err := db.Snapshot(context.Background())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "prepkit: reading inventory: %v\n", err)
+		return 1
+	}
+	if err := export.Static(*out, *inv, time.Now()); err != nil {
+		fmt.Fprintf(os.Stderr, "prepkit: %v\n", err)
+		return 1
+	}
+	fmt.Fprintf(os.Stderr, "prepkit: wrote offline export to %s (open index.html)\n", *out)
 	return 0
 }
 
