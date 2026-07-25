@@ -1,0 +1,371 @@
+[
+  {
+    "id": "water-carried",
+    "name": "Stored water in vehicle",
+    "category": "water",
+    "quantity": 4,
+    "unit": "l",
+    "scaling": "per_person",
+    "criticality": "essential"
+  },
+  {
+    "id": "water-filter",
+    "name": "Compact water filter",
+    "category": "water",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "fixed",
+    "criticality": "essential"
+  },
+  {
+    "id": "purification-tablets",
+    "name": "Purification tablets",
+    "category": "water",
+    "quantity": 1,
+    "unit": "set",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "trail-food",
+    "name": "Heat-tolerant shelf-stable food",
+    "category": "food",
+    "quantity": 2000,
+    "unit": "kcal",
+    "scaling": "per_person",
+    "criticality": "recommended"
+  },
+  {
+    "id": "electrolytes",
+    "name": "Electrolyte supplement",
+    "category": "food",
+    "quantity": 3,
+    "unit": "dose",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "walking-shoes",
+    "name": "Walking shoes and socks",
+    "category": "clothing",
+    "quantity": 1,
+    "unit": "pair",
+    "scaling": "fixed",
+    "criticality": "essential"
+  },
+  {
+    "id": "spare-socks",
+    "name": "Spare socks",
+    "category": "clothing",
+    "quantity": 1,
+    "unit": "pair",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "rain-shell",
+    "name": "Packable rain shell",
+    "category": "clothing",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "fixed",
+    "criticality": "essential"
+  },
+  {
+    "id": "warm-layer",
+    "name": "Insulating layer",
+    "category": "clothing",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "hat-gloves",
+    "name": "Hat and gloves",
+    "category": "clothing",
+    "quantity": 1,
+    "unit": "set",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "dust-mask",
+    "name": "N95 or equivalent respirator",
+    "category": "clothing",
+    "quantity": 2,
+    "unit": "ea",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "compass",
+    "name": "Compass",
+    "category": "navigation",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "route-plan",
+    "name": "Written route and rendezvous plan",
+    "category": "documents",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "fixed",
+    "criticality": "essential"
+  },
+  {
+    "id": "flashlight",
+    "name": "Flashlight",
+    "category": "power",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "fixed",
+    "criticality": "essential"
+  },
+  {
+    "id": "headlamp",
+    "name": "Headlamp",
+    "category": "power",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "spare-batteries",
+    "name": "Spare batteries",
+    "category": "power",
+    "quantity": 1,
+    "unit": "set",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "power-bank",
+    "name": "Power bank and cable",
+    "category": "power",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "compact-first-aid",
+    "name": "Compact first aid kit",
+    "category": "first_aid",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "fixed",
+    "criticality": "essential"
+  },
+  {
+    "id": "personal-medication",
+    "name": "Personal medication, 24h",
+    "category": "first_aid",
+    "quantity": 1,
+    "unit": "day",
+    "scaling": "per_person",
+    "criticality": "essential"
+  },
+  {
+    "id": "hygiene-minimal",
+    "name": "Minimal hygiene kit",
+    "category": "hygiene",
+    "quantity": 1,
+    "unit": "set",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "multi-tool",
+    "name": "Multi-tool or folding knife",
+    "category": "tools",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "work-gloves",
+    "name": "Gloves",
+    "category": "tools",
+    "quantity": 1,
+    "unit": "pair",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "duct-tape",
+    "name": "Duct tape",
+    "category": "tools",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "emergency-blanket",
+    "name": "Wool blanket or sleeping bag",
+    "category": "shelter",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "per_person",
+    "criticality": "essential"
+  },
+  {
+    "id": "cash-small-bills",
+    "name": "Cash in small bills",
+    "category": "personal",
+    "quantity": 1,
+    "unit": "set",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "id-copies",
+    "name": "Copies of identification",
+    "category": "documents",
+    "quantity": 1,
+    "unit": "set",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "whistle",
+    "name": "Whistle",
+    "category": "comms",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "fixed",
+    "criticality": "recommended"
+  },
+  {
+    "id": "regional-road-map",
+    "name": "Regional road atlas",
+    "category": "navigation",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "per_vehicle",
+    "criticality": "essential"
+  },
+  {
+    "id": "jumper-cables",
+    "name": "Jumper cables or jump pack",
+    "category": "tools",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "per_vehicle",
+    "criticality": "essential"
+  },
+  {
+    "id": "tire-repair",
+    "name": "Tire inflator and plug kit",
+    "category": "tools",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "per_vehicle",
+    "criticality": "essential"
+  },
+  {
+    "id": "spare-tire-tools",
+    "name": "Spare tire, jack, and lug wrench",
+    "category": "tools",
+    "quantity": 1,
+    "unit": "set",
+    "scaling": "per_vehicle",
+    "criticality": "essential"
+  },
+  {
+    "id": "tow-strap",
+    "name": "Tow strap",
+    "category": "tools",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "per_vehicle",
+    "criticality": "optional"
+  },
+  {
+    "id": "reflective-triangles",
+    "name": "Reflective triangles or flares",
+    "category": "security",
+    "quantity": 1,
+    "unit": "set",
+    "scaling": "per_vehicle",
+    "criticality": "essential"
+  },
+  {
+    "id": "high-vis-vest",
+    "name": "High-visibility vest",
+    "category": "clothing",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "per_vehicle",
+    "criticality": "recommended"
+  },
+  {
+    "id": "fire-extinguisher-auto",
+    "name": "Automotive fire extinguisher",
+    "category": "security",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "per_vehicle",
+    "criticality": "recommended"
+  },
+  {
+    "id": "window-tool",
+    "name": "Seatbelt cutter and window breaker",
+    "category": "tools",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "per_vehicle",
+    "criticality": "recommended"
+  },
+  {
+    "id": "ice-scraper",
+    "name": "Ice scraper and snow brush",
+    "category": "tools",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "per_vehicle",
+    "criticality": "recommended"
+  },
+  {
+    "id": "traction-aid",
+    "name": "Traction aid",
+    "category": "tools",
+    "quantity": 1,
+    "unit": "set",
+    "scaling": "per_vehicle",
+    "criticality": "optional"
+  },
+  {
+    "id": "shovel",
+    "name": "Compact shovel",
+    "category": "tools",
+    "quantity": 1,
+    "unit": "ea",
+    "scaling": "per_vehicle",
+    "criticality": "optional"
+  },
+  {
+    "id": "vehicle-fluids",
+    "name": "Spare vehicle fluids",
+    "category": "tools",
+    "quantity": 1,
+    "unit": "set",
+    "scaling": "per_vehicle",
+    "criticality": "optional"
+  },
+  {
+    "id": "vehicle-documents",
+    "name": "Registration, insurance, and roadside contacts",
+    "category": "documents",
+    "quantity": 1,
+    "unit": "set",
+    "scaling": "per_vehicle",
+    "criticality": "essential"
+  }
+]

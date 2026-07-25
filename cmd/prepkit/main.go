@@ -12,6 +12,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"net"
 	"net/http"
 	"os"
@@ -19,6 +20,9 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/iotemylabs/prepkit/internal/template"
+	"github.com/iotemylabs/prepkit/templates"
 )
 
 const (
@@ -38,7 +42,9 @@ func run(args []string) int {
 	switch cmd {
 	case "serve":
 		return cmdServe(args)
-	case "validate", "export-static", "export-json":
+	case "validate":
+		return cmdValidate(args)
+	case "export-static", "export-json":
 		fmt.Fprintf(os.Stderr, "prepkit %s: not implemented yet\n", cmd)
 		return 2
 	case "help":
@@ -70,6 +76,7 @@ func cmdServe(args []string) int {
 	fs := flag.NewFlagSet("serve", flag.ExitOnError)
 	listen := fs.String("listen", defaultListen, "address to bind, host:port")
 	dataDir := fs.String("data-dir", "data", "directory for the SQLite database and generated files")
+	templatesDir := fs.String("templates", "", "directory of additional template packs to load alongside the bundled ones")
 	secretFile := fs.String("admin-secret-file", "", "file containing the admin secret (overrides "+envAdminSecret+")")
 	allowPublic := fs.Bool("allow-public-bind", false, "permit binding a non-loopback interface (prints a warning)")
 	fs.Parse(args)
@@ -80,6 +87,18 @@ func cmdServe(args []string) int {
 		return 1
 	}
 	_ = secret // consumed by the web layer once it exists
+
+	// A bad pack is rejected at startup, with the same diagnostics
+	// `prepkit validate` prints, rather than failing mysteriously later.
+	pack, report := loadTemplates(*templatesDir)
+	if !report.OK() {
+		fmt.Fprintf(os.Stderr, "prepkit: refusing to start: %d template error(s)\n", len(report.Errors))
+		for _, e := range report.Errors {
+			fmt.Fprintf(os.Stderr, "  x %s\n", e)
+		}
+		return 1
+	}
+	fmt.Printf("prepkit: loaded %d template(s)\n", len(pack.IDs))
 
 	host, _, err := net.SplitHostPort(*listen)
 	if err != nil {
@@ -100,6 +119,73 @@ func cmdServe(args []string) int {
 	}
 
 	return serve(*listen)
+}
+
+// loadTemplates loads the bundled packs plus, when extraDir is nonempty, the
+// user's pack directory, all in one id namespace so user templates may extend
+// bundled ones.
+func loadTemplates(extraDir string) (*template.Pack, *template.Report) {
+	sources := []fs.FS{templates.FS}
+	if extraDir != "" {
+		sources = append(sources, os.DirFS(extraDir))
+	}
+	pack, report := template.Load(sources...)
+	template.Validate(pack, report)
+	return pack, report
+}
+
+// cmdValidate is the CLI face of the same checks the server runs at startup,
+// so pack authors get identical feedback. With no argument it validates the
+// bundled packs; with a directory argument, that directory alone.
+func cmdValidate(args []string) int {
+	fl := flag.NewFlagSet("validate", flag.ExitOnError)
+	fl.Parse(args)
+
+	var pack *template.Pack
+	var report *template.Report
+	label := "bundled templates"
+	if dir := fl.Arg(0); dir != "" {
+		label = dir
+		pack, report = template.Load(os.DirFS(dir))
+	} else {
+		pack, report = template.Load(templates.FS)
+	}
+	template.Validate(pack, report)
+
+	fmt.Printf("Loaded %d template(s) from %s\n\n", len(pack.IDs), label)
+	for _, s := range report.Summaries {
+		fmt.Printf("  %s  (%s)\n", s.File, s.ID)
+		if s.Extends != "" {
+			fmt.Printf("    extends %s: %d own lines -> %d resolved\n", s.Extends, s.OwnLines, s.Resolved)
+		} else {
+			fmt.Printf("    %d items\n", s.Resolved)
+		}
+		if s.HasCeiling {
+			status := "ok"
+			if s.EstimateKg > s.CeilingKg {
+				status = "OVER"
+			}
+			fmt.Printf("    weight estimate: %.2f kg vs ceiling %g kg [%s]\n", s.EstimateKg, s.CeilingKg, status)
+		}
+		fmt.Printf("    %d essential, %d consumable\n\n", s.Essential, s.Consumable)
+	}
+
+	if len(report.Warnings) > 0 {
+		fmt.Printf("%d warning(s):\n", len(report.Warnings))
+		for _, w := range report.Warnings {
+			fmt.Printf("  ! %s\n", w)
+		}
+		fmt.Println()
+	}
+	if len(report.Errors) > 0 {
+		fmt.Printf("%d error(s):\n", len(report.Errors))
+		for _, e := range report.Errors {
+			fmt.Printf("  x %s\n", e)
+		}
+		return 1
+	}
+	fmt.Println("All templates valid.")
+	return 0
 }
 
 // adminSecret resolves the admin secret from the given file, or failing that

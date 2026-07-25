@@ -1,0 +1,29 @@
+spec_version: "0.1"
+id: bad-template
+name: Deliberately Broken
+layer: home
+edc_tier: 2
+items:
+  - id: orphan-sub
+    name: Thing
+    category: water
+    quantity: 1
+    unit: ea
+    substitutes: [does-not-exist]
+  - id: zero-in-base
+    name: Removed In Base
+    category: food
+    quantity: 0
+    unit: ea
+  - id: no-check
+    name: Degrading Thing
+    category: power
+    quantity: 1
+    unit: ea
+    consumable:
+      degrades_without_expiry: true
+  - id: bad-cat
+    name: Wrong Category
+    category: nonsense
+    quantity: 1
+    unit: ea
