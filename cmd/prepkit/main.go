@@ -21,6 +21,9 @@ import (
 	"syscall"
 	"time"
 
+	"path/filepath"
+
+	"github.com/iotemylabs/prepkit/internal/store"
 	"github.com/iotemylabs/prepkit/internal/template"
 	"github.com/iotemylabs/prepkit/templates"
 )
@@ -117,6 +120,13 @@ func cmdServe(args []string) int {
 		fmt.Fprintf(os.Stderr, "prepkit: creating data dir: %v\n", err)
 		return 1
 	}
+
+	db, err := store.Open(filepath.Join(*dataDir, "prepkit.db"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "prepkit: opening database: %v\n", err)
+		return 1
+	}
+	defer db.Close()
 
 	return serve(*listen)
 }
