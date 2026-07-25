@@ -23,9 +23,12 @@ import (
 
 	"path/filepath"
 
+	"log/slog"
+
 	"github.com/iotemylabs/prepkit/internal/export"
 	"github.com/iotemylabs/prepkit/internal/store"
 	"github.com/iotemylabs/prepkit/internal/template"
+	"github.com/iotemylabs/prepkit/internal/web"
 	"github.com/iotemylabs/prepkit/templates"
 )
 
@@ -91,8 +94,6 @@ func cmdServe(args []string) int {
 		fmt.Fprintf(os.Stderr, "prepkit: %v\n", err)
 		return 1
 	}
-	_ = secret // consumed by the web layer once it exists
-
 	// A bad pack is rejected at startup, with the same diagnostics
 	// `prepkit validate` prints, rather than failing mysteriously later.
 	pack, report := loadTemplates(*templatesDir)
@@ -130,7 +131,9 @@ func cmdServe(args []string) int {
 	}
 	defer db.Close()
 
-	return serve(*listen)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	handler := web.New(db, pack, secret, logger).Handler()
+	return serve(*listen, handler)
 }
 
 // loadTemplates loads the bundled packs plus, when extraDir is nonempty, the
@@ -323,20 +326,10 @@ func printPublicBindWarning(addr string) {
 `, addr)
 }
 
-func serve(addr string) int {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		fmt.Fprint(w, "<!doctype html><title>PrepKit</title><h1>PrepKit</h1><p>Phase 1 scaffold. The application is under construction.</p>")
-	})
-
+func serve(addr string, handler http.Handler) int {
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           mux,
+		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

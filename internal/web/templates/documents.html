@@ -1,0 +1,36 @@
+{{define "title"}}PrepKit — documents{{end}}
+{{define "content"}}
+<h1>Documents</h1>
+<p class="meta">Documents are sensitive by default. Each one must opt in to exports
+individually (<code>export_ok</code>) — there is deliberately no "export everything" switch.
+Identity, financial, insurance, and medical documents never leave this instance in any
+export; encrypted storage for them arrives in a later phase.</p>
+
+{{if .Rows}}
+<table>
+<tr><th>Title</th><th>Kind</th><th>Export</th><th>Last reviewed</th></tr>
+{{range .Rows}}
+<tr>
+<td><a href="/documents/{{.D.ID}}">{{.D.Title}}</a></td>
+<td>{{.D.Kind}}</td>
+<td>{{if .NeverExport}}<span class="badge bad">never exports</span>{{else if .D.ExportOK}}<span class="badge ok">opted in</span>{{else}}<span class="badge">not exported</span>{{end}}</td>
+<td>{{.D.LastReviewed}}</td>
+</tr>
+{{end}}
+</table>
+{{end}}
+
+<h2>New document</h2>
+<form method="post" action="/documents" class="stack">
+<label>Title <input name="title" required></label>
+<label>Kind
+<select name="kind">
+{{range .Kinds}}<option value="{{.}}">{{.}}</option>{{end}}
+</select></label>
+<label>Body (markdown) <textarea name="body" rows="8"></textarea></label>
+<label>Review interval (months) <input name="review_interval_months" inputmode="decimal"> <span class="meta">plans decay; a stale rendezvous point is worse than none</span></label>
+<label>Last reviewed <input name="last_reviewed" placeholder="YYYY-MM-DD"></label>
+<label class="row"><input type="checkbox" name="export_ok"> Allow this document in offline exports</label>
+<button>Create</button>
+</form>
+{{end}}

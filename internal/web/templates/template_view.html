@@ -1,0 +1,34 @@
+{{define "title"}}PrepKit — template {{.Tpl.Name}}{{end}}
+{{define "content"}}
+<h1>{{.Tpl.Name}} <span class="meta">{{.Tpl.ID}}</span></h1>
+{{if .Tpl.Summary}}<p>{{.Tpl.Summary}}</p>{{end}}
+<p class="meta">
+Layer: {{.Tpl.Layer}}.
+{{if .Tpl.Duration}}Duration: {{.Tpl.Duration}}.{{end}}
+{{if .Tpl.Extends}}Extends: <a href="/templates/{{.Tpl.Extends}}">{{.Tpl.Extends}}</a> (lines below are fully resolved).{{end}}
+{{if .Tpl.Source}}License: {{.Tpl.Source.License}}.{{end}}
+</p>
+{{if .Tpl.Assumptions}}{{with .Tpl.Assumptions}}
+<p class="meta">Sized for: {{.Persons}} person(s), climate {{.Climate}}, environment {{.Environment}}{{if .Mobility}}, {{.Mobility}}{{end}}.
+{{if .Notes}}{{.Notes}}{{end}}</p>
+{{end}}{{end}}
+
+<table>
+<tr><th>Line</th><th>Quantity</th><th>Scaling</th><th>Criticality</th><th>Consumable</th><th>Notes</th></tr>
+{{range .Lines}}
+<tr>
+<td><span class="chip chip-{{catColor .Category}}">{{.Category}}</span> {{.Name}} <span class="meta">{{.ID}}</span></td>
+<td>{{fq .Quantity}} {{.Unit}}</td>
+<td>{{.EffectiveScaling}}</td>
+<td>{{.EffectiveCriticality}}</td>
+<td>{{if .Consumable}}yes{{if .Consumable.CheckIntervalMonths}} — check every {{fq .Consumable.CheckIntervalMonths}} mo{{end}}{{end}}</td>
+<td class="meta">{{.RegulatoryNote}}</td>
+</tr>
+{{end}}
+</table>
+
+{{if .Tpl.Skills}}
+<h2>Skills assumed</h2>
+<ul>{{range .Tpl.Skills}}<li>{{.Name}}{{if .Crit}} <span class="meta">({{.Crit}})</span>{{end}}</li>{{end}}</ul>
+{{end}}
+{{end}}

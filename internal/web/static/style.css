@@ -1,0 +1,60 @@
+/* PrepKit UI. One file, no imports, no fonts, no images. */
+* { box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; color: #1a1a1a; background: #fafaf7; }
+main { max-width: 64rem; margin: 0 auto; padding: 0 1rem 2rem; }
+header { background: #223; color: #fff; }
+header nav { max-width: 64rem; margin: 0 auto; padding: 0.6rem 1rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+header a { color: #fff; text-decoration: none; }
+header a:hover { text-decoration: underline; }
+header strong { letter-spacing: 0.05em; }
+footer { max-width: 64rem; margin: 2rem auto 0; padding: 0.8rem 1rem; border-top: 1px solid #ccc; color: #555; font-size: 0.85rem; }
+h1 { font-size: 1.5rem; } h2 { font-size: 1.15rem; margin-top: 1.6em; } h3 { font-size: 1rem; }
+table { border-collapse: collapse; width: 100%; margin: 0.6rem 0; background: #fff; }
+th, td { border: 1px solid #ccc; padding: 0.4rem 0.6rem; text-align: left; vertical-align: top; }
+th { background: #eee; }
+a { color: #1a4a8a; }
+.meta { color: #666; font-size: 0.85rem; }
+.err, .bad-text { color: #a11; }
+code { background: #eee; padding: 0 0.25em; }
+
+form.stack { display: grid; gap: 0.5rem; max-width: 32rem; background: #fff; border: 1px solid #ccc; padding: 0.8rem; }
+form.stack label { display: grid; gap: 0.15rem; font-size: 0.9rem; }
+form.row { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: flex-start; margin: 0.4rem 0; }
+form.inline { display: inline-flex; gap: 0.5rem; align-items: center; margin: 0.4rem 0; }
+input, select, textarea { font: inherit; padding: 0.3rem 0.4rem; border: 1px solid #999; background: #fff; }
+button { font: inherit; padding: 0.35rem 0.9rem; border: 1px solid #223; background: #223; color: #fff; cursor: pointer; }
+button.danger { background: #fff; color: #a11; border-color: #a11; }
+button.linklike { background: none; border: none; color: #fff; text-decoration: underline; padding: 0; }
+
+.banner { padding: 0.6rem 0.8rem; border: 2px solid; margin: 0.6rem 0; background: #fff; }
+.banner.bad { border-color: #a11; }
+.banner.warn { border-color: #b70; }
+.badge { display: inline-block; padding: 0.05rem 0.45rem; border: 1px solid #888; border-radius: 2px; font-size: 0.8rem; background: #fff; }
+.badge.ok { border-color: #262; color: #262; }
+.badge.warn { border-color: #b70; color: #b70; }
+.badge.bad { border-color: #a11; color: #a11; font-weight: bold; }
+tr.bad-row td { background: #fbeeee; }
+
+/* Category chips: the canonical colour convention, presentation only. */
+.chip { display: inline-block; font-size: 0.78rem; padding: 0 0.4rem; border: 1px solid #888; border-left-width: 8px; background: #fff; white-space: nowrap; }
+.chip-blue { border-left-color: #2a6fb0; }
+.chip-green { border-left-color: #2c7a2c; }
+.chip-brown { border-left-color: #7a5230; }
+.chip-red { border-left-color: #b02a2a; }
+.chip-yellow { border-left-color: #c9a800; }
+.chip-orange { border-left-color: #d1720a; }
+.chip-black { border-left-color: #111; }
+.chip-white { border-left-color: #ddd; }
+.chip-purple { border-left-color: #6a3fa0; }
+.chip-pink { border-left-color: #c26a9a; }
+.chip-gray { border-left-color: #808080; }
+.chip-neutral { border-left-color: #b8b09a; }
+
+/* Readiness line statuses. */
+tr.st-missing td { background: #fbeeee; }
+tr.st-partial td { background: #fdf6e3; }
+tr.st-covered_by_substitute td { background: #eef4fb; }
+tr.st-unscored td, tr.st-not_applicable td { color: #777; }
+
+body.login main { max-width: 22rem; margin-top: 4rem; }
+body.login form { display: grid; gap: 0.8rem; }

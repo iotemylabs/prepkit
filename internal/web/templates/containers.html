@@ -1,0 +1,39 @@
+{{define "title"}}PrepKit — containers{{end}}
+{{define "content"}}
+<h1>Containers</h1>
+<p class="meta">Containers nest: a pouch inside a pack inside a vehicle is three containers.</p>
+{{if .Rows}}
+<table>
+<tr><th>Name</th><th>Type</th><th>Inside</th><th>Color</th><th>QR slug</th><th></th></tr>
+{{range .Rows}}
+<tr>
+<td><a href="/containers/{{.C.ID}}">{{.C.Name}}</a></td>
+<td>{{.C.Type}}</td>
+<td>{{.ParentName}}</td>
+<td>{{.C.ColorCode}}</td>
+<td><code>{{.C.QRSlug}}</code></td>
+<td><a href="/containers/{{.C.ID}}/label">label</a></td>
+</tr>
+{{end}}
+</table>
+{{end}}
+
+<h2>Add a container</h2>
+<form method="post" action="/containers" class="stack">
+<label>Name <input name="name" required></label>
+<label>Type
+<select name="type">
+<option value="">(none)</option>
+{{range .Types}}<option value="{{.}}">{{.}}</option>{{end}}
+</select></label>
+<label>Inside
+<select name="parent_id">
+<option value="">(top level)</option>
+{{range .Containers}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+</select></label>
+<label>Color code <input name="color_code" placeholder="e.g. blue"></label>
+<label>Location note <input name="location_note" placeholder="kept out of exports by default"></label>
+<label>Empty weight (g) <input name="weight_g" inputmode="decimal"></label>
+<button>Create</button>
+</form>
+{{end}}

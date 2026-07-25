@@ -1,0 +1,63 @@
+{{define "title"}}PrepKit — {{.Kit.Name}}{{end}}
+{{define "content"}}
+<h1>{{.Kit.Name}}</h1>
+<p>
+{{if .HasTemplate}}<a href="/kits/{{.Kit.ID}}/readiness"><strong>Readiness report</strong></a> &middot; {{end}}
+<a href="/items/new?kit={{.Kit.ID}}">Add item</a> &middot;
+template: {{if .Kit.TemplateID}}<a href="/templates/{{.Kit.TemplateID}}">{{.Kit.TemplateID}}</a>{{else}}none{{end}}
+</p>
+
+<form method="post" action="/kits/{{.Kit.ID}}/verify" class="inline">
+<button>Mark physically verified today</button>
+<span class="meta">last verified: {{if .Kit.LastVerified}}{{.Kit.LastVerified}}{{else}}never{{end}}.
+Press this only after actually opening the kit and confirming its contents.</span>
+</form>
+
+<h2>Items</h2>
+{{if not .Rows}}<p class="meta">No items yet.</p>{{end}}
+{{if .Rows}}
+<table>
+<tr><th>Category</th><th>Item</th><th>Quantity</th><th>Lots</th></tr>
+{{range .Rows}}
+<tr>
+<td><span class="chip chip-{{catColor .It.Category}}">{{.It.Category}}</span></td>
+<td><a href="/items/{{.It.ID}}">{{.It.Name}}</a>{{if .It.Product}} <span class="meta">{{.It.Product}}</span>{{end}}</td>
+<td>{{.Qty}} {{.It.Unit}}</td>
+<td>{{if .Lots}}{{.Lots}} dated lot(s){{end}}</td>
+</tr>
+{{end}}
+</table>
+{{end}}
+{{if .Archived}}<p class="meta">{{len .Archived}} archived item(s) hidden from scoring.</p>{{end}}
+
+<h2>Edit kit</h2>
+<form method="post" action="/kits/{{.Kit.ID}}" class="stack">
+<label>Name <input name="name" value="{{.Kit.Name}}" required></label>
+<label>Layer
+<select name="layer">
+<option value="">(unset)</option>
+{{range .Layers}}<option value="{{.}}" {{if eqs . $.Kit.Layer}}selected{{end}}>{{.}}</option>{{end}}
+</select></label>
+<label>Duration
+<select name="duration">
+<option value="">(unset)</option>
+{{range .Durations}}<option value="{{.}}" {{if eqs . $.Kit.Duration}}selected{{end}}>{{.}}</option>{{end}}
+</select></label>
+<label>Container
+<select name="container_id">
+<option value="">(none)</option>
+{{range .Containers}}<option value="{{.ID}}" {{if eq .ID $.Kit.ContainerID}}selected{{end}}>{{.Name}}</option>{{end}}
+</select></label>
+<label>Assigned to
+<select name="assigned_person_id">
+<option value="">(nobody)</option>
+{{range .Persons}}<option value="{{.ID}}" {{if eq .ID $.Kit.AssignedPersonID}}selected{{end}}>{{.Label}}</option>{{end}}
+</select></label>
+<label>Notes <textarea name="notes" rows="2">{{.Kit.Notes}}</textarea></label>
+<button>Save</button>
+</form>
+<form method="post" action="/kits/{{.Kit.ID}}/delete">
+<button class="danger">Delete kit</button>
+<span class="meta">items survive, unassigned from the kit</span>
+</form>
+{{end}}

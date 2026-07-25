@@ -1,0 +1,49 @@
+{{define "title"}}PrepKit — household{{end}}
+{{define "content"}}
+<h1>Household</h1>
+<p class="meta">Drives per-person and per-day scaling. Deliberately minimal: planning input,
+not a personnel file. Prefer role labels ("parent 1", "youngest") over legal names.</p>
+
+<form method="post" action="/household" class="stack">
+<label>Label <input name="label" value="{{.Household.Label}}"></label>
+<label>Pets <input name="pets" type="number" min="0" value="{{.Household.Pets}}"></label>
+<label>Climate
+<select name="climate">
+<option value="">(unset)</option>
+{{range .Climates}}<option value="{{.}}" {{if eqs . $.Household.Climate}}selected{{end}}>{{.}}</option>{{end}}
+</select></label>
+<label>Environment
+<select name="environment">
+<option value="">(unset)</option>
+{{range .Environments}}<option value="{{.}}" {{if eqs . $.Household.Environment}}selected{{end}}>{{.}}</option>{{end}}
+</select></label>
+<button>Save household</button>
+</form>
+
+<h2>People</h2>
+{{range .Household.Persons}}
+<form method="post" action="/persons/{{.ID}}" class="row">
+<input name="label" value="{{.Label}}" required>
+<select name="age_band">
+<option value="">(age band)</option>
+{{$p := .}}{{range $.AgeBands}}<option value="{{.}}" {{if eqs . $p.AgeBand}}selected{{end}}>{{.}}</option>{{end}}
+</select>
+<textarea name="needs" rows="2" placeholder="needs, one per line (kept out of exports by default)">{{range .Needs}}{{.}}
+{{end}}</textarea>
+<button>Save</button>
+<button formaction="/persons/{{.ID}}/delete" class="danger">Delete</button>
+</form>
+{{end}}
+
+<h3>Add a person</h3>
+<form method="post" action="/persons" class="row">
+<input name="label" placeholder="label (e.g. parent 1)" required>
+<select name="age_band">
+<option value="">(age band)</option>
+{{range .AgeBands}}<option value="{{.}}">{{.}}</option>{{end}}
+</select>
+<textarea name="needs" rows="2" placeholder="needs, one per line"></textarea>
+<button>Add</button>
+</form>
+<p class="meta">Needs are treated as sensitive: excluded from exports by default and never logged.</p>
+{{end}}

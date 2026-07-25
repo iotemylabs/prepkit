@@ -1,0 +1,49 @@
+{{define "title"}}PrepKit — new kit{{end}}
+{{define "content"}}
+<h1>New kit</h1>
+
+<h2>From a template</h2>
+<p class="meta">Instantiating creates the kit plus one linked item per template line, so
+readiness can score what you own against what the template asks for. Quantities start at
+zero; fill them in as you acquire or confirm items.</p>
+<form method="post" action="/kits" class="stack">
+<label>Template
+<select name="template_id" required>
+{{range .Templates}}<option value="{{.ID}}">{{.Name}} ({{.ID}})</option>{{end}}
+</select></label>
+<label>Kit name <input name="name" placeholder="defaults to the template name"></label>
+<label>Container
+<select name="container_id">
+<option value="">(none)</option>
+{{range .Containers}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+</select></label>
+<label>Assigned to
+<select name="assigned_person_id">
+<option value="">(nobody)</option>
+{{range .Persons}}<option value="{{.ID}}">{{.Label}}</option>{{end}}
+</select></label>
+<button>Instantiate</button>
+</form>
+
+<h2>Blank</h2>
+<form method="post" action="/kits" class="stack">
+<input type="hidden" name="template_id" value="">
+<label>Kit name <input name="name" required></label>
+<label>Layer
+<select name="layer">
+<option value="">(unset)</option>
+{{range .Layers}}<option value="{{.}}">{{.}}</option>{{end}}
+</select></label>
+<label>Duration
+<select name="duration">
+<option value="">(unset)</option>
+{{range .Durations}}<option value="{{.}}">{{.}}</option>{{end}}
+</select></label>
+<label>Container
+<select name="container_id">
+<option value="">(none)</option>
+{{range .Containers}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+</select></label>
+<button>Create blank kit</button>
+</form>
+{{end}}

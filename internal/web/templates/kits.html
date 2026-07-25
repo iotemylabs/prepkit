@@ -1,0 +1,19 @@
+{{define "title"}}PrepKit — kits{{end}}
+{{define "content"}}
+<h1>Kits</h1>
+<p><a href="/kits/new">New kit</a> — blank, or instantiated from a template.</p>
+{{if .Kits}}
+<table>
+<tr><th>Kit</th><th>Layer</th><th>Duration</th><th>Template</th><th>Last verified</th></tr>
+{{range .Kits}}
+<tr>
+<td><a href="/kits/{{.ID}}">{{.Name}}</a></td>
+<td>{{.Layer}}</td>
+<td>{{.Duration}}</td>
+<td>{{.TemplateID}}</td>
+<td>{{if .LastVerified}}{{.LastVerified}}{{else}}never{{end}}</td>
+</tr>
+{{end}}
+</table>
+{{end}}
+{{end}}

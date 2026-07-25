@@ -1,0 +1,20 @@
+{{define "base"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PrepKit — log in</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="login">
+<main>
+<h1>PrepKit</h1>
+{{if .Error}}<p class="err">{{.Error}}</p>{{end}}
+<form method="post" action="/login">
+<input type="hidden" name="next" value="{{.Next}}">
+<label>Admin secret <input type="password" name="secret" autofocus required></label>
+<button>Log in</button>
+</form>
+</main>
+</body>
+</html>{{end}}

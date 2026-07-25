@@ -1,0 +1,39 @@
+{{define "title"}}PrepKit — new item{{end}}
+{{define "content"}}
+<h1>New item</h1>
+<form method="post" action="/items" class="stack">
+<label>Name <input name="name" required></label>
+<label>Category
+<select name="category" required>
+{{range .Categories}}<option value="{{.}}">{{.}}</option>{{end}}
+</select></label>
+<label>Kit
+<select name="kit_id">
+<option value="">(none)</option>
+{{range .Kits}}<option value="{{.ID}}" {{if eq .ID $.KitID}}selected{{end}}>{{.Name}}</option>{{end}}
+</select></label>
+{{if .Lines}}
+<label>Satisfies template line
+<select name="template_item_id">
+<option value="">(none)</option>
+{{range .Lines}}<option value="{{.ID}}">{{.Name}} ({{.ID}})</option>{{end}}
+</select></label>
+{{else}}
+<label>Satisfies template line (id) <input name="template_item_id" placeholder="pick a kit with a template first, or type an id"></label>
+{{end}}
+<label>Container
+<select name="container_id">
+<option value="">(none)</option>
+{{range .Containers}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+</select></label>
+<label>Quantity <input name="quantity" inputmode="decimal" placeholder="leave blank if tracked as dated lots"></label>
+<label>Unit <input name="unit" placeholder="ea, l, kcal, ..."></label>
+<label>Product <input name="product" placeholder="actual make/model you own (optional)"></label>
+<label>Weight (g) <input name="weight_g" inputmode="decimal"></label>
+<label>Acquired <input name="acquired" placeholder="YYYY-MM-DD"></label>
+<label>Cost <input name="cost" inputmode="decimal"> <span class="meta">sensitive: excluded from exports by default</span></label>
+<label>Serial <input name="serial"> <span class="meta">sensitive: excluded from exports by default, never logged</span></label>
+<label>Notes <textarea name="notes" rows="2"></textarea></label>
+<button>Create item</button>
+</form>
+{{end}}

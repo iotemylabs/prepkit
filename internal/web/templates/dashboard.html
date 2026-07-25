@@ -1,0 +1,55 @@
+{{define "title"}}PrepKit — dashboard{{end}}
+{{define "content"}}
+<h1>Dashboard</h1>
+
+<h2>Kits</h2>
+{{if not .Kits}}<p>No kits yet. <a href="/kits/new">Create one</a>, optionally from a template.</p>{{end}}
+{{if .Kits}}
+<table>
+<tr><th>Kit</th><th>Essential coverage</th><th>Status</th><th>Last verified</th><th></th></tr>
+{{range .Kits}}
+<tr>
+<td><a href="/kits/{{.Kit.ID}}">{{.Kit.Name}}</a></td>
+{{if .Report}}
+<td>{{.Report.Essential.Covered}} / {{.Report.Essential.Total}} ({{pct .Report.Essential}}) <span class="meta">essential items covered</span></td>
+<td>{{if .Report.Incomplete}}<span class="badge bad">INCOMPLETE</span>{{else}}<span class="badge ok">essentials covered</span>{{end}}
+{{if .Report.Freshness.Unverified}} <span class="badge warn">UNVERIFIED</span>{{end}}</td>
+{{else}}
+<td colspan="2" class="meta">no template linked; not scored</td>
+{{end}}
+<td>{{if .Kit.LastVerified}}{{.Kit.LastVerified}}{{else}}never{{end}}</td>
+<td>{{if .Report}}<a href="/kits/{{.Kit.ID}}/readiness">readiness</a>{{end}}</td>
+</tr>
+{{end}}
+</table>
+{{end}}
+
+<h2>Expired — still physically present</h2>
+{{if not .Expired}}<p class="meta">Nothing expired. </p>{{else}}
+<table>
+<tr><th>Item</th><th>Kit</th><th>Quantity</th><th>Expired on</th></tr>
+{{range .Expired}}<tr class="bad-row"><td><a href="/items/{{.ItemID}}">{{.ItemName}}</a></td><td>{{.KitName}}</td><td>{{fq .Quantity}} {{.Unit}}</td><td>{{.Expires}}</td></tr>
+{{end}}
+</table>
+<p class="meta">Expired stock is not counted toward readiness, but it is listed here rather than
+disappearing: expired water and no water are different situations.</p>
+{{end}}
+
+<h2>Expiring within 90 days</h2>
+{{if not .Expiring}}<p class="meta">Nothing expiring soon.</p>{{else}}
+<table>
+<tr><th>Item</th><th>Kit</th><th>Quantity</th><th>Expires</th><th>Days left</th></tr>
+{{range .Expiring}}<tr><td><a href="/items/{{.ItemID}}">{{.ItemName}}</a></td><td>{{.KitName}}</td><td>{{fq .Quantity}} {{.Unit}}</td><td>{{.Expires}}</td><td>{{.DaysUntil}}</td></tr>
+{{end}}
+</table>
+{{end}}
+
+<h2>Checks overdue</h2>
+{{if not .Overdue}}<p class="meta">No checks overdue.</p>{{else}}
+<table>
+<tr><th>Item</th><th>Kit</th><th>Why</th></tr>
+{{range .Overdue}}<tr><td><a href="/items/{{.ItemID}}">{{.ItemName}}</a></td><td>{{.KitName}}</td><td>{{.Reason}}</td></tr>
+{{end}}
+</table>
+{{end}}
+{{end}}

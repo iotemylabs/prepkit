@@ -1,0 +1,102 @@
+{{define "title"}}PrepKit — {{.It.Name}}{{end}}
+{{define "content"}}
+<h1>{{.It.Name}}</h1>
+<p>
+{{if .It.KitID}}<a href="/kits/{{.It.KitID}}">&larr; back to kit</a> &middot; {{end}}
+<span class="chip chip-{{catColor .It.Category}}">{{.It.Category}}</span>
+</p>
+
+<form method="post" action="/items/{{.It.ID}}/check" class="inline">
+<button>Mark checked today</button>
+<span class="meta">records an inspection event; resets the check-interval clock</span>
+</form>
+
+<h2>Dated lots</h2>
+{{if .HasLots}}
+<p class="meta">This item's quantity is the sum of its lots; the item-level quantity field is
+disabled while lots exist so the two can never disagree.</p>
+<table>
+<tr><th>Quantity</th><th>Expires</th><th>Basis</th><th>Next check</th><th>Status</th><th></th></tr>
+{{range .Lots}}
+<tr>
+<td colspan="6">
+<form method="post" action="/lots/{{.ID}}" class="row">
+<input name="quantity" value="{{fq .Quantity}}" inputmode="decimal" size="6">
+<input name="unit" value="{{.Unit}}" size="5" placeholder="unit">
+<input name="expires" value="{{.Expires}}" size="10" placeholder="expires">
+<select name="expiry_basis">
+<option value="">(basis)</option>
+{{$l := .}}{{range $.ExpiryBases}}<option value="{{.}}" {{if eqs . $l.ExpiryBasis}}selected{{end}}>{{.}}</option>{{end}}
+</select>
+<input name="opened" value="{{.Opened}}" size="10" placeholder="opened">
+<input name="next_check" value="{{.NextCheck}}" size="10" placeholder="next check">
+<select name="status">
+{{range $.Statuses}}<option value="{{.}}" {{if eqs . $l.EffectiveStatus}}selected{{end}}>{{.}}</option>{{end}}
+</select>
+<button>Save</button>
+<button formaction="/lots/{{.ID}}/delete" class="danger">Delete</button>
+</form>
+</td>
+</tr>
+{{end}}
+</table>
+{{else}}
+<p class="meta">No lots. Add one per dated batch — multiple lots per item is the normal case;
+it is how partial rotation is represented.</p>
+{{end}}
+
+<h3>Add a lot</h3>
+<form method="post" action="/items/{{.It.ID}}/lots" class="row">
+<input name="quantity" placeholder="qty" inputmode="decimal" size="6" required>
+<input name="unit" placeholder="unit" size="5" value="{{.It.Unit}}">
+<input name="expires" placeholder="expires YYYY-MM-DD" size="12">
+<select name="expiry_basis">
+<option value="">(basis)</option>
+{{range .ExpiryBases}}<option value="{{.}}">{{.}}</option>{{end}}
+</select>
+<input name="next_check" placeholder="next check" size="12">
+<button>Add lot</button>
+</form>
+
+<h2>Edit item</h2>
+<form method="post" action="/items/{{.It.ID}}" class="stack">
+<label>Name <input name="name" value="{{.It.Name}}" required></label>
+<label>Category
+<select name="category">
+{{range .Categories}}<option value="{{.}}" {{if eqs . $.It.Category}}selected{{end}}>{{.}}</option>{{end}}
+</select></label>
+<label>Kit
+<select name="kit_id">
+<option value="">(none)</option>
+{{range .Kits}}<option value="{{.ID}}" {{if eq .ID $.It.KitID}}selected{{end}}>{{.Name}}</option>{{end}}
+</select></label>
+{{if .Lines}}
+<label>Satisfies template line
+<select name="template_item_id">
+<option value="">(none)</option>
+{{range .Lines}}<option value="{{.ID}}" {{if eq .ID $.It.TemplateItemID}}selected{{end}}>{{.Name}} ({{.ID}})</option>{{end}}
+</select></label>
+{{else}}
+<label>Satisfies template line (id) <input name="template_item_id" value="{{.It.TemplateItemID}}"></label>
+{{end}}
+<label>Container
+<select name="container_id">
+<option value="">(none)</option>
+{{range .Containers}}<option value="{{.ID}}" {{if eq .ID $.It.ContainerID}}selected{{end}}>{{.Name}}</option>{{end}}
+</select></label>
+<label>Quantity <input name="quantity" value="{{fqp .It.Quantity}}" inputmode="decimal" {{if .HasLots}}disabled placeholder="derived from lots"{{end}}></label>
+<label>Unit <input name="unit" value="{{.It.Unit}}"></label>
+<label>Product <input name="product" value="{{.It.Product}}"></label>
+<label>Weight (g) <input name="weight_g" value="{{fqp .It.WeightG}}" inputmode="decimal"></label>
+<label>Acquired <input name="acquired" value="{{.It.Acquired}}" placeholder="YYYY-MM-DD"></label>
+<label>Cost <input name="cost" value="{{fqp .It.Cost}}" inputmode="decimal"> <span class="meta">sensitive</span></label>
+<label>Serial <input name="serial" value="{{.It.Serial}}"> <span class="meta">sensitive</span></label>
+<label>Notes <textarea name="notes" rows="2">{{.It.Notes}}</textarea></label>
+<label class="row"><input type="checkbox" name="archived" {{if .It.Archived}}checked{{end}}> Archived (kept in records, excluded from scoring)</label>
+<button>Save</button>
+</form>
+<form method="post" action="/items/{{.It.ID}}/delete">
+<button class="danger">Delete item</button>
+<span class="meta">its lots are deleted with it; archiving is usually better</span>
+</form>
+{{end}}

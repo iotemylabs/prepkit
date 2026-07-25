@@ -1,0 +1,18 @@
+{{define "title"}}PrepKit — templates{{end}}
+{{define "content"}}
+<h1>Templates</h1>
+<p class="meta">Loaded template packs. Instantiate one from <a href="/kits/new">new kit</a>.</p>
+<table>
+<tr><th>Template</th><th>Layer</th><th>Duration</th><th>Extends</th><th>Lines</th><th>Essential</th></tr>
+{{range .Rows}}
+<tr>
+<td><a href="/templates/{{.ID}}">{{.Name}}</a> <span class="meta">{{.ID}}</span></td>
+<td>{{.Layer}}</td>
+<td>{{.Duration}}</td>
+<td>{{.Extends}}</td>
+<td>{{.Lines}}</td>
+<td>{{.Essential}}</td>
+</tr>
+{{end}}
+</table>
+{{end}}

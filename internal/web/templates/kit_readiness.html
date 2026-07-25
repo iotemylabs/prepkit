@@ -1,0 +1,89 @@
+{{define "title"}}PrepKit — readiness: {{.Kit.Name}}{{end}}
+{{define "content"}}
+<h1>Readiness — {{.Kit.Name}}</h1>
+<p class="meta">Scored against template <a href="/templates/{{.R.TemplateID}}">{{.TplName}}</a>.
+This score measures conformance to that template, nothing more. It is not a safety guarantee.</p>
+
+{{if .R.Incomplete}}
+<p class="banner bad"><strong>INCOMPLETE</strong> — at least one essential item is not covered.
+No other number on this page outranks that.</p>
+{{end}}
+{{if .R.Freshness.Unverified}}
+<p class="banner warn"><strong>UNVERIFIED</strong> — {{.R.Freshness.UnverifiedReason}}.
+A kit that has not been physically opened is not ready, whatever the coverage below says.</p>
+{{end}}
+{{range .R.Warnings}}<p class="banner warn">{{.}}</p>{{end}}
+
+<h2>Coverage</h2>
+<p class="meta">Three separate figures by design — they are never averaged, because a surplus of
+optional items must not mask a missing essential.</p>
+<table>
+<tr><th>Criticality</th><th>Covered</th><th></th></tr>
+<tr><td><strong>Essential</strong></td><td>{{.R.Essential.Covered}} / {{.R.Essential.Total}}</td><td>{{pct .R.Essential}}</td></tr>
+<tr><td>Recommended</td><td>{{.R.Recommended.Covered}} / {{.R.Recommended.Total}}</td><td>{{pct .R.Recommended}}</td></tr>
+<tr><td>Optional</td><td>{{.R.Optional.Covered}} / {{.R.Optional.Total}}</td><td>{{pct .R.Optional}}</td></tr>
+</table>
+
+<h2>Lines</h2>
+<table>
+<tr><th>Item</th><th>Criticality</th><th>Target</th><th>Have</th><th>Status</th><th>Notes</th></tr>
+{{range .R.Lines}}
+<tr class="{{statusClass .Status}}">
+<td><span class="chip chip-{{catColor .Category}}">{{.Category}}</span> {{.Name}}</td>
+<td>{{.Criticality}}</td>
+<td>{{if eq (printf "%s" .Status) "unscored"}}&mdash;{{else}}{{fq .ScaledTarget}} {{.Unit}}{{end}}</td>
+<td>{{fq .ValidQuantity}}{{if .ExpiredQuantity}} <span class="bad-text">(+{{fq .ExpiredQuantity}} expired)</span>{{end}}</td>
+<td>{{.Status}}{{if .CoveredBy}} via {{.CoveredBy}}{{end}}</td>
+<td class="meta">{{.UnscoredReason}}{{range .Warnings}}{{.}} {{end}}</td>
+</tr>
+{{end}}
+</table>
+
+{{if .R.Groups}}
+<h2>Capabilities (redundancy groups)</h2>
+<table>
+<tr><th>Capability</th><th>Members covered</th><th>Status</th></tr>
+{{range .R.Groups}}
+<tr>
+<td>{{.Name}}</td>
+<td>{{.MembersCovered}} / {{len .Members}}</td>
+<td>{{if .Redundant}}redundant (all means present){{else if .Covered}}covered by one means — the group asked for more than one{{else}}<span class="bad-text">no means present</span>{{end}}</td>
+</tr>
+{{end}}
+</table>
+{{end}}
+
+{{if .R.Weight}}
+<h2>Weight</h2>
+<p>
+Estimated {{printf "%.2f" .R.Weight.EstimateKg}} kg against a {{fq .R.Weight.CeilingKg}} kg ceiling.
+{{if .R.Weight.OverCeiling}}<strong class="bad-text">OVER the ceiling — an unliftable bag is a failed bag.</strong>{{end}}
+{{if .R.Weight.IsFloor}}<span class="meta">This is a floor: {{len .R.Weight.UnknownItems}} non-optional item(s) have no recorded weight.</span>{{end}}
+</p>
+{{end}}
+
+<h2>Freshness</h2>
+{{if .R.Freshness.Expired}}
+<h3>Expired, still present</h3>
+<ul>{{range .R.Freshness.Expired}}<li><a href="/items/{{.ItemID}}">{{.ItemName}}</a> — {{fq .Quantity}} expired {{.Expires}}{{if .ExpiryBasis}} ({{.ExpiryBasis}}){{end}}</li>{{end}}</ul>
+{{end}}
+{{if .R.Freshness.ExpiringSoon}}
+<h3>Expiring soon</h3>
+<ul>{{range .R.Freshness.ExpiringSoon}}<li><a href="/items/{{.ItemID}}">{{.ItemName}}</a> — {{fq .Quantity}} expires {{.Expires}} ({{.DaysUntil}} days)</li>{{end}}</ul>
+{{end}}
+{{if .R.Freshness.CheckOverdue}}
+<h3>Checks overdue</h3>
+<ul>{{range .R.Freshness.CheckOverdue}}<li><a href="/items/{{.ItemID}}">{{.ItemName}}</a> — {{.Reason}}</li>{{end}}</ul>
+{{end}}
+{{if and (not .R.Freshness.Expired) (not .R.Freshness.ExpiringSoon) (not .R.Freshness.CheckOverdue)}}
+<p class="meta">Nothing expired, expiring, or overdue for a check.</p>
+{{end}}
+
+{{if .R.Skills}}
+<h2>Skills this template assumes</h2>
+<p class="meta">Gear without skill is a known failure mode. PrepKit cannot score these.</p>
+<ul>
+{{range .R.Skills}}<li>{{.Name}}{{if .Crit}} <span class="meta">({{.Crit}})</span>{{end}}{{if .Notes}} — <span class="meta">{{.Notes}}</span>{{end}}</li>{{end}}
+</ul>
+{{end}}
+{{end}}

@@ -1,0 +1,32 @@
+{{define "base"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{block "title" .}}PrepKit{{end}}</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+<nav>
+<strong>PrepKit</strong>
+<a href="/">Dashboard</a>
+<a href="/kits">Kits</a>
+<a href="/containers">Containers</a>
+<a href="/household">Household</a>
+<a href="/documents">Documents</a>
+<a href="/templates">Templates</a>
+<a href="/exports">Export</a>
+<form method="post" action="/logout" class="inline"><button class="linklike">Log out</button></form>
+</nav>
+</header>
+<main>
+{{template "content" .}}
+</main>
+<footer>
+<p>A readiness score measures conformance to a template someone wrote — it is not a safety
+guarantee. PrepKit is organizational tooling, not emergency guidance; follow official
+instructions during an actual emergency.</p>
+</footer>
+</body>
+</html>{{end}}

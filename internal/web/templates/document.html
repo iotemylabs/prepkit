@@ -1,0 +1,24 @@
+{{define "title"}}PrepKit — {{.D.Title}}{{end}}
+{{define "content"}}
+<h1>{{.D.Title}}</h1>
+{{if .NeverExport}}
+<p class="banner warn">Documents of kind <strong>{{.D.Kind}}</strong> never appear in any
+export, regardless of the flag below. Until the encrypted vault exists (a later phase), the
+only copy lives in this instance's database.</p>
+{{end}}
+<form method="post" action="/documents/{{.D.ID}}" class="stack">
+<label>Title <input name="title" value="{{.D.Title}}" required></label>
+<label>Kind
+<select name="kind">
+{{range .Kinds}}<option value="{{.}}" {{if eqs . $.D.Kind}}selected{{end}}>{{.}}</option>{{end}}
+</select></label>
+<label>Body (markdown) <textarea name="body" rows="12">{{.D.Body}}</textarea></label>
+<label>Review interval (months) <input name="review_interval_months" value="{{if .D.ReviewIntervalMonths}}{{fq .D.ReviewIntervalMonths}}{{end}}" inputmode="decimal"></label>
+<label>Last reviewed <input name="last_reviewed" value="{{.D.LastReviewed}}" placeholder="YYYY-MM-DD"></label>
+<label class="row"><input type="checkbox" name="export_ok" {{if .D.ExportOK}}checked{{end}}> Allow this document in offline exports</label>
+<button>Save</button>
+</form>
+<form method="post" action="/documents/{{.D.ID}}/delete">
+<button class="danger">Delete document</button>
+</form>
+{{end}}

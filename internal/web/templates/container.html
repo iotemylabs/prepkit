@@ -1,0 +1,36 @@
+{{define "title"}}PrepKit — {{.C.Name}}{{end}}
+{{define "content"}}
+<h1>{{.C.Name}}</h1>
+<p><a href="/containers/{{.C.ID}}/label">Print label</a> — slug <code>{{.C.QRSlug}}</code></p>
+
+<form method="post" action="/containers/{{.C.ID}}" class="stack">
+<label>Name <input name="name" value="{{.C.Name}}" required></label>
+<label>Type
+<select name="type">
+<option value="">(none)</option>
+{{range .Types}}<option value="{{.}}" {{if eqs . $.C.Type}}selected{{end}}>{{.}}</option>{{end}}
+</select></label>
+<label>Inside
+<select name="parent_id">
+<option value="">(top level)</option>
+{{range .Parents}}<option value="{{.ID}}" {{if eq .ID $.C.ParentID}}selected{{end}}>{{.Name}}</option>{{end}}
+</select></label>
+<label>Color code <input name="color_code" value="{{.C.ColorCode}}"></label>
+<label>Location note <input name="location_note" value="{{.C.LocationNote}}"></label>
+<label>Empty weight (g) <input name="weight_g" value="{{fqp .C.WeightG}}" inputmode="decimal"></label>
+<button>Save</button>
+</form>
+<form method="post" action="/containers/{{.C.ID}}/delete">
+<button class="danger">Delete container</button>
+<span class="meta">refused while it still has children or contents</span>
+</form>
+
+{{if .Children}}
+<h2>Contains</h2>
+<ul>{{range .Children}}<li><a href="/containers/{{.ID}}">{{.Name}}</a></li>{{end}}</ul>
+{{end}}
+{{if .Contents}}
+<h2>Items stored here</h2>
+<ul>{{range .Contents}}<li><a href="/items/{{.ID}}">{{.Name}}</a></li>{{end}}</ul>
+{{end}}
+{{end}}
