@@ -2,44 +2,158 @@
 
 A self-hostable emergency preparedness manager. PrepKit tracks preparedness
 kits, the items in them, and the expiration dates of the consumables inside
-them, then scores real holdings against reusable kit templates to tell you what
-you are missing.
-
-**Status: Phase 1, under construction.** Nothing here is ready to deploy yet.
+them, then scores real holdings against reusable kit templates to tell you
+what you are missing.
 
 This is the reference implementation of the
-[PrepKit spec](https://github.com/iotemylabs/prepkit-spec). The spec repository
-is authoritative for the template format, the inventory model, and the
-readiness scoring algorithm; `schema/` and `templates/` here are a vendored
-snapshot of it (v0.1 draft, taken 2026-07-24).
+[PrepKit spec](https://github.com/iotemylabs/prepkit-spec), which is
+authoritative for the template format, the inventory model, and the readiness
+scoring algorithm. `schema/` and `templates/` here are a vendored snapshot of
+it (spec v0.1).
 
-## Design constraints
+## What it does (Phase 1)
 
-- **Single static binary.** Go with `modernc.org/sqlite` (pure Go, no cgo), web
-  UI embedded via `embed.FS`. Cross-compiles for `linux/arm64`; a Raspberry Pi
-  is a first-class deployment target.
-- **No frontend build step.** Server-rendered HTML. No JavaScript required.
-- **Private by default.** Binds to localhost unless explicitly told otherwise,
-  refuses to start without an admin secret, never phones home. Read
-  [`docs/threat-model.md`](https://github.com/iotemylabs/prepkit-spec/blob/main/docs/threat-model.md)
-  in the spec repo before deploying: a populated instance is an indexed
-  inventory of household valuables and identity documents, and must be treated
-  accordingly.
-- **Offline export.** Generates a plain, script-free static HTML mirror
-  suitable for e-ink readers and always-offline nodes.
+- **Template packs.** Three bundled templates (72-hour home base, urban
+  get-home bag, vehicle kit) load and validate at startup; add your own pack
+  directory with `-templates`. Templates support inheritance (`extends`), and
+  `prepkit validate` gives pack authors the same feedback the server enforces.
+- **Instantiate a kit** from a template: one linked item per template line is
+  created up front, so readiness can score what you own against what the
+  template asks for from day one.
+- **Item/Lot tracking.** An Item is a type of thing you own ("canned chili");
+  a Lot is a dated batch of it ("six cans, best-by 2027-03"). Expiration
+  lives on lots, which is what makes partial rotation representable. An
+  item's quantity is derived from its lots whenever it has any — the two can
+  never disagree.
+- **Rotation dashboard** distinguishing expired (still present), expiring
+  soon, and checks overdue — including items that degrade without a printed
+  date, tracked by inspection interval against the maintenance log.
+- **Readiness reports** per `docs/readiness.md` in the spec: essential,
+  recommended, and optional coverage as three separate figures, never
+  averaged; any uncovered essential marks the kit incomplete; expired is
+  reported distinctly from missing; substitutes and redundancy groups are
+  honoured; pack weight is checked against declared ceilings; and a kit
+  nobody has physically opened lately says so, prominently.
+- **QR labels** for containers: printable pages whose codes contain only an
+  opaque local token — never a URL, an address, or anything readable off the
+  instance.
+- **Exports.** Full JSON export conforming to `inventory.schema.json`, and a
+  self-contained offline HTML export (no JavaScript, no external requests,
+  large high-contrast type) for e-ink readers and always-offline nodes.
 
-## Running (current state)
+## Quick start
+
+### Binary
 
 ```
-PREPKIT_ADMIN_SECRET=change-me go run ./cmd/prepkit serve
+PREPKIT_ADMIN_SECRET='choose-a-long-secret' prepkit serve
 ```
 
-Serves a placeholder page on `127.0.0.1:8214`. Binding any non-loopback
-address requires `-allow-public-bind` and prints a warning.
+Then open http://127.0.0.1:8214 and log in with the secret.
+
+### Docker
+
+```
+docker build -t prepkit .
+docker run -d -p 127.0.0.1:8214:8214 \
+  -e PREPKIT_ADMIN_SECRET='choose-a-long-secret' \
+  -v prepkit-data:/data prepkit
+```
+
+One image, one container, no sidecars, no external database. Publish the
+port on `127.0.0.1` (or a LAN/VPN interface you trust) as above — see the
+security posture below.
+
+### Raspberry Pi / ARM
+
+```
+CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o prepkit ./cmd/prepkit
+```
+
+Pure Go throughout (SQLite via `modernc.org/sqlite`), so cross-compilation
+needs no toolchain beyond Go itself. CI builds `linux/arm64` on every push.
+
+## Security posture
+
+Read
+[`docs/threat-model.md`](https://github.com/iotemylabs/prepkit-spec/blob/main/docs/threat-model.md)
+in the spec repo before deploying. A populated instance is an indexed
+inventory of household valuables with serial numbers, plus household
+composition — more useful to a burglar than a burglary. The implementation
+takes that seriously:
+
+- **Localhost by default.** Binding any non-loopback interface requires
+  `-allow-public-bind` and prints a loud warning. Do not expose PrepKit to
+  the internet; put it on a LAN or behind a VPN.
+- **No default credentials.** The server refuses to start unless
+  `PREPKIT_ADMIN_SECRET` (or `-admin-secret-file`) is set.
+- **Sensitive fields stay home.** Serial numbers, costs, per-person needs,
+  and location notes are excluded from exports by default. Documents opt in
+  to exports individually (`export_ok`); there is deliberately no "export
+  everything" switch. Identity, financial, insurance, and medical documents
+  never appear in any export, under any flag.
+- **The offline export cannot phone anywhere.** No scripts, no external
+  references of any kind — enforced by tests that grep every generated byte.
+- **QR labels are opaque tokens**, resolvable only against the local
+  instance.
+- **No telemetry, no update pings, no crash reporting.** The binary makes no
+  outbound connections, ever.
+- **Logs carry method, path, status, duration** — never query strings, form
+  values, or entity fields.
+
+## Command line
+
+```
+prepkit serve          start the web server (default)
+  -listen              address to bind (default 127.0.0.1:8214)
+  -data-dir            SQLite database location (default ./data)
+  -templates DIR       load an extra template pack directory
+  -admin-secret-file   read the admin secret from a file
+  -allow-public-bind   permit a non-loopback bind (warns loudly)
+
+prepkit validate [DIR]     validate template packs; nonzero exit on failure
+prepkit export-json        full JSON export to stdout or -o FILE
+  -include-sensitive       restore stripped fields for local backup (warns)
+prepkit export-static -o DIR   write the offline HTML export
+```
+
+## Data ownership
+
+Everything lives in one SQLite file under `-data-dir`. `prepkit export-json
+-include-sensitive` produces a complete backup (except never-export document
+kinds, which exist only in the database file itself); the export validates
+against `inventory.schema.json` and round-trips losslessly. Back up the
+database file, the export, or both.
+
+## Development
+
+```
+go test ./...        # the full suite
+go run ./cmd/prepkit validate
+```
+
+The test suite includes golden-file tests for the template resolver
+(including the spec's 21→41 inheritance fixture), the spec CI's six-error
+negative template, table-driven JSON fixtures for the readiness engine,
+migration tests against empty and populated databases, a JSON export
+round-trip, greps proving the offline export contains no scripts and no
+sensitive fields, and HTTP-level tests for auth and the main flows.
+
+Dependencies, deliberately few: `modernc.org/sqlite` (pure-Go SQLite),
+`gopkg.in/yaml.v3` (template packs are YAML), `santhosh-tekuri/jsonschema`
+(packs are validated against the actual spec schema), `skip2/go-qrcode`
+(label PNGs). The web UI is standard library `net/http` and `html/template`
+with zero JavaScript and no frontend build step.
 
 ## Disclaimer
 
 PrepKit is organizational tooling, not emergency guidance. A readiness score
-measures conformance to a template someone wrote, nothing more. See
+measures conformance to a template someone wrote — nothing more. Templates
+are sized for stated assumptions; read them. Follow official guidance during
+an actual emergency. See
 [`DISCLAIMER.md`](https://github.com/iotemylabs/prepkit-spec/blob/main/DISCLAIMER.md)
 in the spec repository.
+
+## License
+
+MIT. Bundled templates are CC0-1.0 per their `source` blocks.

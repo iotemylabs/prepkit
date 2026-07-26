@@ -1,0 +1,86 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: gofmt
+        run: test -z "$(gofmt -l .)"
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test ./...
+
+      - name: Validate bundled templates
+        run: go run ./cmd/prepkit validate
+
+      - name: Validator rejects known-bad input
+        # The same six-error template the spec repo's CI uses. A validator
+        # that passes everything is worse than none.
+        run: |
+          if go run ./cmd/prepkit validate internal/template/testdata/negative; then
+            echo "FAIL: validator accepted a template with six known errors"
+            exit 1
+          fi
+          echo "OK: validator correctly rejected the broken template"
+
+  cross-compile:
+    # A Raspberry Pi is a first-class deployment target: the static
+    # linux/arm64 build must never regress. No cgo anywhere.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: linux/arm64 static build
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o prepkit-linux-arm64 ./cmd/prepkit
+
+      - name: linux/amd64 static build
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o prepkit-linux-amd64 ./cmd/prepkit
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t prepkit:ci .
+
+      - name: Boots with a secret and serves the login page
+        run: |
+          docker run -d --name pk -p 127.0.0.1:8214:8214 -e PREPKIT_ADMIN_SECRET=ci-secret prepkit:ci
+          for i in $(seq 1 10); do
+            if curl -fsS http://127.0.0.1:8214/login | grep -qi "admin secret"; then
+              echo "OK: login page up"
+              docker rm -f pk
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "FAIL: server did not come up"
+          docker logs pk
+          docker rm -f pk
+          exit 1
+
+      - name: Refuses to start without a secret
+        run: |
+          if docker run --rm prepkit:ci; then
+            echo "FAIL: started with no admin secret configured"
+            exit 1
+          fi
+          echo "OK: refused to start without credentials"
