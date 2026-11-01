@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"path/filepath"
+	"runtime/debug"
 
 	"log/slog"
 
@@ -37,11 +38,18 @@ const (
 	envAdminSecret = "PREPKIT_ADMIN_SECRET"
 )
 
+// version is stamped at build time with
+// -ldflags "-X main.version=v1.2.3". Local builds keep "dev".
+var version = "dev"
+
 func main() {
 	os.Exit(run(os.Args[1:]))
 }
 
 func run(args []string) int {
+	if len(args) > 0 && (args[0] == "-version" || args[0] == "--version") {
+		args = []string{"version"}
+	}
 	cmd := "serve"
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		cmd, args = args[0], args[1:]
@@ -57,6 +65,9 @@ func run(args []string) int {
 		return cmdBackup(args)
 	case "export-static":
 		return cmdExportStatic(args)
+	case "version":
+		fmt.Println("prepkit", buildVersion())
+		return 0
 	case "help":
 		usage(os.Stdout)
 		return 0
@@ -65,6 +76,22 @@ func run(args []string) int {
 		usage(os.Stderr)
 		return 2
 	}
+}
+
+// buildVersion reports the stamped version, or for a local build the commit
+// it came from when Go recorded one.
+func buildVersion() string {
+	if version != "dev" {
+		return version
+	}
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, s := range info.Settings {
+			if s.Key == "vcs.revision" && len(s.Value) >= 7 {
+				return "dev-" + s.Value[:7]
+			}
+		}
+	}
+	return version
 }
 
 func usage(w io.Writer) {
@@ -77,6 +104,7 @@ Usage:
   prepkit export-json   write a full JSON export to stdout or a file
   prepkit export-static write the offline static HTML export to a directory
   prepkit backup        write a complete copy of the database to a new file
+  prepkit version       print the version and exit
   prepkit help          show this help
 
 Run 'prepkit <command> -h' for the flags a command accepts.
@@ -107,6 +135,7 @@ func cmdServe(args []string) int {
 		}
 		return 1
 	}
+	fmt.Printf("prepkit: version %s\n", buildVersion())
 	fmt.Printf("prepkit: loaded %d template(s)\n", len(pack.IDs))
 
 	host, _, err := net.SplitHostPort(*listen)

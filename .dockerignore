@@ -1,0 +1,10 @@
+# Keep local databases, binaries, and history out of the build context.
+.git
+.github
+data
+dist
+*.db
+*.db-wal
+*.db-shm
+*.exe
+prepkit
