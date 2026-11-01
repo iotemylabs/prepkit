@@ -12,11 +12,13 @@ individually opted in.</p>
 <h2>JSON</h2>
 <p><a href="/exports/inventory.json"><strong>Standard export</strong></a> — conforms to
 <code>inventory.schema.json</code>. Serial numbers, costs, per-person needs, and location
-notes are stripped; documents appear only if individually opted in.</p>
-<p><a href="/exports/inventory-full.json"><strong>Full backup</strong></a> — restores the
-stripped fields and includes documents that did not opt in. Treat the file as
-confidential: it maps your valuables and your household. Identity, financial, insurance,
-and medical documents are <em>never</em> included, even here.</p>
+notes are always stripped; documents appear only if individually opted in.</p>
+
+<h2>Backup</h2>
+<p>Exports never carry serial numbers, costs, per-person needs, or location notes, and no
+switch restores them. A complete copy of your data is a database backup, made on the
+server with <code>prepkit backup -o FILE</code>. That file is unencrypted and holds everything,
+including identity documents, so store it as carefully as the instance itself.</p>
 
 <p class="meta">The same exports are available from the command line:
 <code>prepkit export-static -o DIR</code> and <code>prepkit export-json</code>.</p>

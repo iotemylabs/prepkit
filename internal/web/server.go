@@ -41,6 +41,11 @@ type Server struct {
 	sessions   *sessionStore
 	pages      map[string]*htmpl.Template
 	log        *slog.Logger
+
+	// SecureCookies marks the session cookie Secure. Set it when users reach
+	// PrepKit over HTTPS through a reverse proxy; browsers then refuse to send
+	// the cookie over plain HTTP, so leave it off for a direct HTTP deployment.
+	SecureCookies bool
 }
 
 const sessionCookie = "prepkit_session"
@@ -161,7 +166,6 @@ func (s *Server) Handler() http.Handler {
 
 	mux.HandleFunc("GET /exports", s.exportsPage)
 	mux.HandleFunc("GET /exports/inventory.json", s.exportJSON)
-	mux.HandleFunc("GET /exports/inventory-full.json", s.exportJSONFull)
 	mux.HandleFunc("GET /exports/offline.zip", s.exportOfflineZip)
 
 	return s.logRequests(s.checkOrigin(s.requireAuth(mux)))
@@ -265,6 +269,7 @@ func (s *Server) loginPost(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   s.SecureCookies,
 		SameSite: http.SameSiteStrictMode,
 	})
 	next := r.FormValue("next")
@@ -280,6 +285,7 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name: sessionCookie, Value: "", Path: "/", MaxAge: -1, HttpOnly: true,
+		Secure:   s.SecureCookies,
 		SameSite: http.SameSiteStrictMode,
 	})
 	http.Redirect(w, r, "/login", http.StatusSeeOther)

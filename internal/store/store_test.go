@@ -458,3 +458,41 @@ func TestValidationErrors(t *testing.T) {
 		t.Errorf("lot for missing item: got %v, want ErrNotFound", err)
 	}
 }
+
+// TestBackup: the copy is complete, including a document kind no export may
+// carry, it refuses to overwrite, and the copy opens as a normal database.
+func TestBackup(t *testing.T) {
+	s := newStore(t)
+	it := &model.Item{Name: "Radio", Category: model.CatComms, Serial: "SN-42", Quantity: fp(1)}
+	if err := s.CreateItem(ctx, it); err != nil {
+		t.Fatal(err)
+	}
+	doc := &model.Document{Title: "Passport scans", Kind: model.DocIdentity, Body: "secret"}
+	if err := s.CreateDocument(ctx, doc); err != nil {
+		t.Fatal(err)
+	}
+
+	dest := filepath.Join(t.TempDir(), "backup with space.db")
+	if err := s.Backup(ctx, dest); err != nil {
+		t.Fatalf("backup: %v", err)
+	}
+	if err := s.Backup(ctx, dest); err == nil {
+		t.Error("backup overwrote an existing file")
+	}
+
+	restored, err := Open(dest)
+	if err != nil {
+		t.Fatalf("opening backup: %v", err)
+	}
+	defer restored.Close()
+	inv, err := restored.Snapshot(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(inv.Items) != 1 || inv.Items[0].Serial != "SN-42" {
+		t.Errorf("backup items = %+v, want the radio with its serial", inv.Items)
+	}
+	if len(inv.Documents) != 1 || inv.Documents[0].Kind != model.DocIdentity {
+		t.Errorf("backup documents = %+v, want the identity document", inv.Documents)
+	}
+}

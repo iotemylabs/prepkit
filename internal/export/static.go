@@ -33,7 +33,7 @@ import (
 // dir must not already contain files: the export refuses rather than mixing
 // generations of pages.
 func Static(dir string, inv model.Inventory, now time.Time) error {
-	filtered := Filter(inv, Options{})
+	filtered := Filter(inv)
 	today := now.UTC().Truncate(24 * time.Hour)
 
 	if entries, err := os.ReadDir(dir); err == nil && len(entries) > 0 {

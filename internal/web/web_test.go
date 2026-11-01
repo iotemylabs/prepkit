@@ -304,9 +304,15 @@ func TestExportDownloads(t *testing.T) {
 	if strings.Contains(redacted, "SN-42") {
 		t.Error("standard export leaked a serial number")
 	}
-	_, full := e.get(t, "/exports/inventory-full.json")
-	if !strings.Contains(full, "SN-42") {
-		t.Error("full backup export missing the serial")
+	// No route restores sensitive fields: threat-model.md forbids a bulk
+	// override, and a complete copy is a database backup made on the server.
+	gone, err := e.client.Get(e.ts.URL + "/exports/inventory-full.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	gone.Body.Close()
+	if gone.StatusCode != http.StatusNotFound {
+		t.Errorf("full export route returned %d, want 404", gone.StatusCode)
 	}
 
 	resp, err := e.client.Get(e.ts.URL + "/exports/offline.zip")
@@ -324,3 +330,39 @@ func TestExportDownloads(t *testing.T) {
 }
 
 func fp(v float64) *float64 { return &v }
+
+func TestSecureCookiesFlag(t *testing.T) {
+	st, err := store.Open(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	pack, rep := tpack.Load(templates.FS)
+	tpack.Validate(pack, rep)
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	for _, secure := range []bool{false, true} {
+		s := New(st, pack, testSecret, logger)
+		s.SecureCookies = secure
+		for _, path := range []string{"/login", "/logout"} {
+			form := url.Values{"secret": {testSecret}}.Encode()
+			req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(form))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			req.AddCookie(&http.Cookie{Name: sessionCookie, Value: "stale"})
+			rec := httptest.NewRecorder()
+			s.Handler().ServeHTTP(rec, req)
+
+			cookies := rec.Result().Cookies()
+			if len(cookies) == 0 {
+				if path == "/logout" {
+					// An unauthenticated logout redirects to login untouched.
+					continue
+				}
+				t.Fatalf("%s set no cookie", path)
+			}
+			if cookies[0].Secure != secure {
+				t.Errorf("%s with SecureCookies=%v: cookie Secure=%v", path, secure, cookies[0].Secure)
+			}
+		}
+	}
+}

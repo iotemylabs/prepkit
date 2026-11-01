@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"path/filepath"
+	"runtime/debug"
 
 	"log/slog"
 
@@ -37,11 +38,18 @@ const (
 	envAdminSecret = "PREPKIT_ADMIN_SECRET"
 )
 
+// version is stamped at build time with
+// -ldflags "-X main.version=v1.2.3". Local builds keep "dev".
+var version = "dev"
+
 func main() {
 	os.Exit(run(os.Args[1:]))
 }
 
 func run(args []string) int {
+	if len(args) > 0 && (args[0] == "-version" || args[0] == "--version") {
+		args = []string{"version"}
+	}
 	cmd := "serve"
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		cmd, args = args[0], args[1:]
@@ -53,8 +61,15 @@ func run(args []string) int {
 		return cmdValidate(args)
 	case "export-json":
 		return cmdExportJSON(args)
+	case "backup":
+		return cmdBackup(args)
 	case "export-static":
 		return cmdExportStatic(args)
+	case "healthcheck":
+		return cmdHealthcheck(args)
+	case "version":
+		fmt.Println("prepkit", buildVersion())
+		return 0
 	case "help":
 		usage(os.Stdout)
 		return 0
@@ -63,6 +78,22 @@ func run(args []string) int {
 		usage(os.Stderr)
 		return 2
 	}
+}
+
+// buildVersion reports the stamped version, or for a local build the commit
+// it came from when Go recorded one.
+func buildVersion() string {
+	if version != "dev" {
+		return version
+	}
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, s := range info.Settings {
+			if s.Key == "vcs.revision" && len(s.Value) >= 7 {
+				return "dev-" + s.Value[:7]
+			}
+		}
+	}
+	return version
 }
 
 func usage(w io.Writer) {
@@ -74,6 +105,9 @@ Usage:
   prepkit validate      validate template packs and exit nonzero on failure
   prepkit export-json   write a full JSON export to stdout or a file
   prepkit export-static write the offline static HTML export to a directory
+  prepkit backup        write a complete copy of the database to a new file
+  prepkit healthcheck   exit nonzero unless the local server is responding
+  prepkit version       print the version and exit
   prepkit help          show this help
 
 Run 'prepkit <command> -h' for the flags a command accepts.
@@ -87,6 +121,7 @@ func cmdServe(args []string) int {
 	templatesDir := fs.String("templates", "", "directory of additional template packs to load alongside the bundled ones")
 	secretFile := fs.String("admin-secret-file", "", "file containing the admin secret (overrides "+envAdminSecret+")")
 	allowPublic := fs.Bool("allow-public-bind", false, "permit binding a non-loopback interface (prints a warning)")
+	secureCookies := fs.Bool("secure-cookies", false, "mark the session cookie Secure; set this when serving over HTTPS through a reverse proxy")
 	fs.Parse(args)
 
 	secret, err := adminSecret(*secretFile)
@@ -104,6 +139,7 @@ func cmdServe(args []string) int {
 		}
 		return 1
 	}
+	fmt.Printf("prepkit: version %s\n", buildVersion())
 	fmt.Printf("prepkit: loaded %d template(s)\n", len(pack.IDs))
 
 	host, _, err := net.SplitHostPort(*listen)
@@ -132,8 +168,9 @@ func cmdServe(args []string) int {
 	defer db.Close()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	handler := web.New(db, pack, secret, logger).Handler()
-	return serve(*listen, handler)
+	srv := web.New(db, pack, secret, logger)
+	srv.SecureCookies = *secureCookies
+	return serve(*listen, srv.Handler())
 }
 
 // loadTemplates loads the bundled packs plus, when extraDir is nonempty, the
@@ -203,17 +240,14 @@ func cmdValidate(args []string) int {
 	return 0
 }
 
-// cmdExportJSON writes the full JSON export (inventory.schema.json) to a
-// file or stdout. Sensitive fields are excluded by default per the threat
-// model; -include-sensitive restores them for local backup, with a warning
-// naming exactly what that includes. Documents of kind identity, financial,
-// insurance, or medical never export under any flag.
+// cmdExportJSON writes the JSON export (inventory.schema.json) to a file or
+// stdout. The sensitivity policy always applies: there is no flag to restore
+// sensitive fields, because the threat model allows no bulk override. For a
+// complete copy of the data, see cmdBackup.
 func cmdExportJSON(args []string) int {
 	fl := flag.NewFlagSet("export-json", flag.ExitOnError)
 	dataDir := fl.String("data-dir", "data", "directory containing the SQLite database")
 	out := fl.String("o", "", "output file (default stdout)")
-	includeSensitive := fl.Bool("include-sensitive", false,
-		"include serial numbers, costs, per-person needs, location notes, and documents regardless of export_ok (for local backup)")
 	fl.Parse(args)
 
 	db, err := store.Open(filepath.Join(*dataDir, "prepkit.db"))
@@ -228,13 +262,7 @@ func cmdExportJSON(args []string) int {
 		fmt.Fprintf(os.Stderr, "prepkit: reading inventory: %v\n", err)
 		return 1
 	}
-	if *includeSensitive {
-		fmt.Fprintln(os.Stderr, "prepkit: WARNING: this export includes serial numbers, costs, per-person needs,")
-		fmt.Fprintln(os.Stderr, "prepkit: location notes, and documents that did not opt in via export_ok.")
-		fmt.Fprintln(os.Stderr, "prepkit: Treat the file as confidential. Identity, financial, insurance, and")
-		fmt.Fprintln(os.Stderr, "prepkit: medical documents are never exported, even with this flag.")
-	}
-	b, err := export.JSON(*inv, time.Now(), export.Options{IncludeSensitive: *includeSensitive})
+	b, err := export.JSON(*inv, time.Now())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "prepkit: %v\n", err)
 		return 1
@@ -282,6 +310,40 @@ func cmdExportStatic(args []string) int {
 		return 1
 	}
 	fmt.Fprintf(os.Stderr, "prepkit: wrote offline export to %s (open index.html)\n", *out)
+	return 0
+}
+
+// cmdBackup writes a consistent copy of the database, safe to run while the
+// server is up. Unlike an export it holds everything, so it warns.
+func cmdBackup(args []string) int {
+	fl := flag.NewFlagSet("backup", flag.ExitOnError)
+	dataDir := fl.String("data-dir", "data", "directory containing the SQLite database")
+	out := fl.String("o", "", "output file (required, must not already exist)")
+	fl.Parse(args)
+
+	if *out == "" {
+		fmt.Fprintln(os.Stderr, "prepkit backup: -o <file> is required")
+		return 2
+	}
+	src := filepath.Join(*dataDir, "prepkit.db")
+	if _, err := os.Stat(src); err != nil {
+		fmt.Fprintf(os.Stderr, "prepkit: no database at %s\n", src)
+		return 1
+	}
+	db, err := store.Open(src)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "prepkit: opening database: %v\n", err)
+		return 1
+	}
+	defer db.Close()
+
+	if err := db.Backup(context.Background(), *out); err != nil {
+		fmt.Fprintf(os.Stderr, "prepkit: %v\n", err)
+		return 1
+	}
+	fmt.Fprintf(os.Stderr, "prepkit: wrote %s\n", *out)
+	fmt.Fprintln(os.Stderr, "prepkit: WARNING: this file is not encrypted and holds everything, including serial")
+	fmt.Fprintln(os.Stderr, "prepkit: numbers and identity documents. Store it as carefully as the instance itself.")
 	return 0
 }
 
@@ -358,4 +420,40 @@ func serve(addr string, handler http.Handler) int {
 		}
 	}
 	return 0
+}
+
+// cmdHealthcheck is for the container HEALTHCHECK: a scratch image has no
+// curl. It only ever talks to a loopback address, so the binary still makes
+// no outbound connections.
+func cmdHealthcheck(args []string) int {
+	fl := flag.NewFlagSet("healthcheck", flag.ExitOnError)
+	addr := fl.String("addr", defaultListen, "loopback address of the running server, host:port")
+	fl.Parse(args)
+
+	if err := checkHealth(*addr); err != nil {
+		fmt.Fprintf(os.Stderr, "prepkit: unhealthy: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+func checkHealth(addr string) error {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return fmt.Errorf("invalid address %q: %w", addr, err)
+	}
+	if !isLoopback(host) {
+		return fmt.Errorf("refusing to probe non-loopback address %q", addr)
+	}
+	// An empty Transport ignores proxy settings in the environment.
+	client := &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{}}
+	resp, err := client.Get("http://" + addr + "/login")
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("GET /login returned %d", resp.StatusCode)
+	}
+	return nil
 }
