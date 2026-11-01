@@ -119,32 +119,31 @@ func TestExportValidatesAgainstSchema(t *testing.T) {
 	sch := compileInventorySchema(t)
 	now := time.Date(2026, 7, 24, 12, 0, 0, 0, time.UTC)
 
-	for _, opts := range []Options{{}, {IncludeSensitive: true}} {
-		b, err := JSON(*inv, now, opts)
-		if err != nil {
-			t.Fatal(err)
-		}
-		var doc any
-		if err := json.Unmarshal(b, &doc); err != nil {
-			t.Fatal(err)
-		}
-		if err := sch.Validate(doc); err != nil {
-			t.Errorf("export (opts %+v) does not conform to inventory.schema.json:\n%v", opts, err)
-		}
+	b, err := JSON(*inv, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc any
+	if err := json.Unmarshal(b, &doc); err != nil {
+		t.Fatal(err)
+	}
+	if err := sch.Validate(doc); err != nil {
+		t.Errorf("export does not conform to inventory.schema.json:\n%v", err)
 	}
 }
 
-// TestRoundTrip: export everything exportable, import into a fresh database,
+// TestRoundTrip: export, import into a fresh database,
 // export again, and confirm the result is identical. instance_id is
-// per-installation and legitimately differs; never-export documents
-// legitimately cannot survive any export, which is asserted separately.
+// per-installation and legitimately differs. Sensitive fields and documents
+// that did not opt in do not survive an export, by design; a complete copy
+// is a database backup, tested in internal/store.
 func TestRoundTrip(t *testing.T) {
 	src := populated(t)
 	srcInv, err := src.Snapshot(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	exported := Filter(*srcInv, Options{IncludeSensitive: true})
+	exported := Filter(*srcInv)
 
 	dst, err := store.Open(filepath.Join(t.TempDir(), "restore.db"))
 	if err != nil {
@@ -159,7 +158,7 @@ func TestRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	reexported := Filter(*dstInv, Options{IncludeSensitive: true})
+	reexported := Filter(*dstInv)
 
 	exported.InstanceID = ""
 	reexported.InstanceID = ""
@@ -176,8 +175,8 @@ func TestRoundTrip(t *testing.T) {
 			t.Errorf("never-export document %q crossed an export boundary", d.Title)
 		}
 	}
-	if len(reexported.Documents) != 2 {
-		t.Errorf("re-export has %d documents, want 2 (plan + contact sheet)", len(reexported.Documents))
+	if len(reexported.Documents) != 1 {
+		t.Errorf("re-export has %d documents, want 1 (the export_ok plan)", len(reexported.Documents))
 	}
 }
 
@@ -188,7 +187,7 @@ func TestSensitivityPolicy(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	def := Filter(*inv, Options{})
+	def := Filter(*inv)
 	for _, p := range def.Household.Persons {
 		if p.Needs != nil {
 			t.Error("person.needs must be stripped by default")
@@ -206,30 +205,6 @@ func TestSensitivityPolicy(t *testing.T) {
 	}
 	if len(def.Documents) != 1 || def.Documents[0].Kind != model.DocPlan {
 		t.Errorf("default export documents = %+v, want only the export_ok plan", def.Documents)
-	}
-
-	full := Filter(*inv, Options{IncludeSensitive: true})
-	if full.Household.Persons[0].Needs == nil {
-		t.Error("IncludeSensitive must restore needs")
-	}
-	foundSerial := false
-	for _, it := range full.Items {
-		if it.Serial == "SN-99887" {
-			foundSerial = true
-		}
-	}
-	if !foundSerial {
-		t.Error("IncludeSensitive must restore serial")
-	}
-	// export_ok=false documents come along for backup, but never-export
-	// kinds do not, even here.
-	if len(full.Documents) != 2 {
-		t.Errorf("full export documents = %d, want 2", len(full.Documents))
-	}
-	for _, d := range full.Documents {
-		if d.Kind.NeverExportUnencrypted() {
-			t.Errorf("never-export document %q included despite IncludeSensitive", d.Title)
-		}
 	}
 
 	// The source snapshot itself is untouched by filtering.

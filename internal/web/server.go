@@ -161,7 +161,6 @@ func (s *Server) Handler() http.Handler {
 
 	mux.HandleFunc("GET /exports", s.exportsPage)
 	mux.HandleFunc("GET /exports/inventory.json", s.exportJSON)
-	mux.HandleFunc("GET /exports/inventory-full.json", s.exportJSONFull)
 	mux.HandleFunc("GET /exports/offline.zip", s.exportOfflineZip)
 
 	return s.logRequests(s.checkOrigin(s.requireAuth(mux)))

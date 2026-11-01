@@ -53,6 +53,8 @@ func run(args []string) int {
 		return cmdValidate(args)
 	case "export-json":
 		return cmdExportJSON(args)
+	case "backup":
+		return cmdBackup(args)
 	case "export-static":
 		return cmdExportStatic(args)
 	case "help":
@@ -74,6 +76,7 @@ Usage:
   prepkit validate      validate template packs and exit nonzero on failure
   prepkit export-json   write a full JSON export to stdout or a file
   prepkit export-static write the offline static HTML export to a directory
+  prepkit backup        write a complete copy of the database to a new file
   prepkit help          show this help
 
 Run 'prepkit <command> -h' for the flags a command accepts.
@@ -203,17 +206,14 @@ func cmdValidate(args []string) int {
 	return 0
 }
 
-// cmdExportJSON writes the full JSON export (inventory.schema.json) to a
-// file or stdout. Sensitive fields are excluded by default per the threat
-// model; -include-sensitive restores them for local backup, with a warning
-// naming exactly what that includes. Documents of kind identity, financial,
-// insurance, or medical never export under any flag.
+// cmdExportJSON writes the JSON export (inventory.schema.json) to a file or
+// stdout. The sensitivity policy always applies: there is no flag to restore
+// sensitive fields, because the threat model allows no bulk override. For a
+// complete copy of the data, see cmdBackup.
 func cmdExportJSON(args []string) int {
 	fl := flag.NewFlagSet("export-json", flag.ExitOnError)
 	dataDir := fl.String("data-dir", "data", "directory containing the SQLite database")
 	out := fl.String("o", "", "output file (default stdout)")
-	includeSensitive := fl.Bool("include-sensitive", false,
-		"include serial numbers, costs, per-person needs, location notes, and documents regardless of export_ok (for local backup)")
 	fl.Parse(args)
 
 	db, err := store.Open(filepath.Join(*dataDir, "prepkit.db"))
@@ -228,13 +228,7 @@ func cmdExportJSON(args []string) int {
 		fmt.Fprintf(os.Stderr, "prepkit: reading inventory: %v\n", err)
 		return 1
 	}
-	if *includeSensitive {
-		fmt.Fprintln(os.Stderr, "prepkit: WARNING: this export includes serial numbers, costs, per-person needs,")
-		fmt.Fprintln(os.Stderr, "prepkit: location notes, and documents that did not opt in via export_ok.")
-		fmt.Fprintln(os.Stderr, "prepkit: Treat the file as confidential. Identity, financial, insurance, and")
-		fmt.Fprintln(os.Stderr, "prepkit: medical documents are never exported, even with this flag.")
-	}
-	b, err := export.JSON(*inv, time.Now(), export.Options{IncludeSensitive: *includeSensitive})
+	b, err := export.JSON(*inv, time.Now())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "prepkit: %v\n", err)
 		return 1
@@ -282,6 +276,40 @@ func cmdExportStatic(args []string) int {
 		return 1
 	}
 	fmt.Fprintf(os.Stderr, "prepkit: wrote offline export to %s (open index.html)\n", *out)
+	return 0
+}
+
+// cmdBackup writes a consistent copy of the database, safe to run while the
+// server is up. Unlike an export it holds everything, so it warns.
+func cmdBackup(args []string) int {
+	fl := flag.NewFlagSet("backup", flag.ExitOnError)
+	dataDir := fl.String("data-dir", "data", "directory containing the SQLite database")
+	out := fl.String("o", "", "output file (required, must not already exist)")
+	fl.Parse(args)
+
+	if *out == "" {
+		fmt.Fprintln(os.Stderr, "prepkit backup: -o <file> is required")
+		return 2
+	}
+	src := filepath.Join(*dataDir, "prepkit.db")
+	if _, err := os.Stat(src); err != nil {
+		fmt.Fprintf(os.Stderr, "prepkit: no database at %s\n", src)
+		return 1
+	}
+	db, err := store.Open(src)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "prepkit: opening database: %v\n", err)
+		return 1
+	}
+	defer db.Close()
+
+	if err := db.Backup(context.Background(), *out); err != nil {
+		fmt.Fprintf(os.Stderr, "prepkit: %v\n", err)
+		return 1
+	}
+	fmt.Fprintf(os.Stderr, "prepkit: wrote %s\n", *out)
+	fmt.Fprintln(os.Stderr, "prepkit: WARNING: this file is not encrypted and holds everything, including serial")
+	fmt.Fprintln(os.Stderr, "prepkit: numbers and identity documents. Store it as carefully as the instance itself.")
 	return 0
 }
 

@@ -304,9 +304,15 @@ func TestExportDownloads(t *testing.T) {
 	if strings.Contains(redacted, "SN-42") {
 		t.Error("standard export leaked a serial number")
 	}
-	_, full := e.get(t, "/exports/inventory-full.json")
-	if !strings.Contains(full, "SN-42") {
-		t.Error("full backup export missing the serial")
+	// No route restores sensitive fields: threat-model.md forbids a bulk
+	// override, and a complete copy is a database backup made on the server.
+	gone, err := e.client.Get(e.ts.URL + "/exports/inventory-full.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	gone.Body.Close()
+	if gone.StatusCode != http.StatusNotFound {
+		t.Errorf("full export route returned %d, want 404", gone.StatusCode)
 	}
 
 	resp, err := e.client.Get(e.ts.URL + "/exports/offline.zip")

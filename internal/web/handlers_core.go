@@ -210,29 +210,18 @@ func (s *Server) exportsPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) exportJSON(w http.ResponseWriter, r *http.Request) {
-	s.serveJSONExport(w, r, export.Options{}, "prepkit-inventory.json")
-}
-
-// exportJSONFull is the local-backup form: it restores the default-stripped
-// sensitive fields. Documents of never-export kinds are still absent — no
-// route reaches them.
-func (s *Server) exportJSONFull(w http.ResponseWriter, r *http.Request) {
-	s.serveJSONExport(w, r, export.Options{IncludeSensitive: true}, "prepkit-inventory-full.json")
-}
-
-func (s *Server) serveJSONExport(w http.ResponseWriter, r *http.Request, opts export.Options, filename string) {
 	inv, err := s.st.Snapshot(r.Context())
 	if err != nil {
 		s.fail(w, err)
 		return
 	}
-	b, err := export.JSON(*inv, time.Now(), opts)
+	b, err := export.JSON(*inv, time.Now())
 	if err != nil {
 		s.fail(w, err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`"`)
+	w.Header().Set("Content-Disposition", `attachment; filename="prepkit-inventory.json"`)
 	w.Write(b)
 }
 
