@@ -101,6 +101,12 @@ takes that seriously:
 - **Logs carry method, path, status, duration** — never query strings, form
   values, or entity fields.
 
+**Out of scope:** a targeted, resourced adversary. PrepKit is built to resist
+opportunistic network attackers and the loss of an export device. It does not
+claim to protect you from someone determined and well equipped who is after
+your data specifically. The database is not encrypted at rest in this phase,
+so anyone who gets the server or a backup file can read everything in it.
+
 ## Command line
 
 ```
