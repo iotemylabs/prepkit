@@ -65,6 +65,8 @@ func run(args []string) int {
 		return cmdBackup(args)
 	case "export-static":
 		return cmdExportStatic(args)
+	case "healthcheck":
+		return cmdHealthcheck(args)
 	case "version":
 		fmt.Println("prepkit", buildVersion())
 		return 0
@@ -104,6 +106,7 @@ Usage:
   prepkit export-json   write a full JSON export to stdout or a file
   prepkit export-static write the offline static HTML export to a directory
   prepkit backup        write a complete copy of the database to a new file
+  prepkit healthcheck   exit nonzero unless the local server is responding
   prepkit version       print the version and exit
   prepkit help          show this help
 
@@ -118,6 +121,7 @@ func cmdServe(args []string) int {
 	templatesDir := fs.String("templates", "", "directory of additional template packs to load alongside the bundled ones")
 	secretFile := fs.String("admin-secret-file", "", "file containing the admin secret (overrides "+envAdminSecret+")")
 	allowPublic := fs.Bool("allow-public-bind", false, "permit binding a non-loopback interface (prints a warning)")
+	secureCookies := fs.Bool("secure-cookies", false, "mark the session cookie Secure; set this when serving over HTTPS through a reverse proxy")
 	fs.Parse(args)
 
 	secret, err := adminSecret(*secretFile)
@@ -164,8 +168,9 @@ func cmdServe(args []string) int {
 	defer db.Close()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	handler := web.New(db, pack, secret, logger).Handler()
-	return serve(*listen, handler)
+	srv := web.New(db, pack, secret, logger)
+	srv.SecureCookies = *secureCookies
+	return serve(*listen, srv.Handler())
 }
 
 // loadTemplates loads the bundled packs plus, when extraDir is nonempty, the
@@ -415,4 +420,40 @@ func serve(addr string, handler http.Handler) int {
 		}
 	}
 	return 0
+}
+
+// cmdHealthcheck is for the container HEALTHCHECK: a scratch image has no
+// curl. It only ever talks to a loopback address, so the binary still makes
+// no outbound connections.
+func cmdHealthcheck(args []string) int {
+	fl := flag.NewFlagSet("healthcheck", flag.ExitOnError)
+	addr := fl.String("addr", defaultListen, "loopback address of the running server, host:port")
+	fl.Parse(args)
+
+	if err := checkHealth(*addr); err != nil {
+		fmt.Fprintf(os.Stderr, "prepkit: unhealthy: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+func checkHealth(addr string) error {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return fmt.Errorf("invalid address %q: %w", addr, err)
+	}
+	if !isLoopback(host) {
+		return fmt.Errorf("refusing to probe non-loopback address %q", addr)
+	}
+	// An empty Transport ignores proxy settings in the environment.
+	client := &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{}}
+	resp, err := client.Get("http://" + addr + "/login")
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("GET /login returned %d", resp.StatusCode)
+	}
+	return nil
 }

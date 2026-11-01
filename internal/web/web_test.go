@@ -330,3 +330,39 @@ func TestExportDownloads(t *testing.T) {
 }
 
 func fp(v float64) *float64 { return &v }
+
+func TestSecureCookiesFlag(t *testing.T) {
+	st, err := store.Open(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	pack, rep := tpack.Load(templates.FS)
+	tpack.Validate(pack, rep)
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	for _, secure := range []bool{false, true} {
+		s := New(st, pack, testSecret, logger)
+		s.SecureCookies = secure
+		for _, path := range []string{"/login", "/logout"} {
+			form := url.Values{"secret": {testSecret}}.Encode()
+			req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(form))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			req.AddCookie(&http.Cookie{Name: sessionCookie, Value: "stale"})
+			rec := httptest.NewRecorder()
+			s.Handler().ServeHTTP(rec, req)
+
+			cookies := rec.Result().Cookies()
+			if len(cookies) == 0 {
+				if path == "/logout" {
+					// An unauthenticated logout redirects to login untouched.
+					continue
+				}
+				t.Fatalf("%s set no cookie", path)
+			}
+			if cookies[0].Secure != secure {
+				t.Errorf("%s with SecureCookies=%v: cookie Secure=%v", path, secure, cookies[0].Secure)
+			}
+		}
+	}
+}
