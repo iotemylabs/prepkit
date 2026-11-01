@@ -45,6 +45,10 @@ it (spec v0.1).
 
 ### Binary
 
+Download a binary for your platform from the
+[releases page](https://github.com/iotemylabs/prepkit/releases), check it
+against `SHA256SUMS`, then run it:
+
 ```
 PREPKIT_ADMIN_SECRET='choose-a-long-secret' prepkit serve
 ```
@@ -53,18 +57,51 @@ Then open http://127.0.0.1:8214 and log in with the secret.
 
 ### Docker
 
+Images for `linux/amd64` and `linux/arm64` are published with each release:
+
 ```
-docker build -t prepkit .
-docker run -d -p 127.0.0.1:8214:8214 \
+docker run -d --name prepkit -p 127.0.0.1:8214:8214 \
   -e PREPKIT_ADMIN_SECRET='choose-a-long-secret' \
-  -v prepkit-data:/data prepkit
+  -v prepkit-data:/data ghcr.io/iotemylabs/prepkit:latest
 ```
 
 One image, one container, no sidecars, no external database. Publish the
 port on `127.0.0.1` (or a LAN/VPN interface you trust) as above — see the
 security posture below.
 
+The container runs as UID 65532. A named volume, as above, works as is. A
+bind-mounted host directory must be owned by that UID first:
+`chown 65532:65532 /path/to/data`.
+
+To back up from a running container:
+
+```
+docker exec prepkit /prepkit backup -data-dir /data -o /data/prepkit-backup.db
+```
+
+To build the image yourself, run `docker build -t prepkit .`.
+
+### Behind a reverse proxy
+
+If users reach PrepKit over HTTPS through a proxy on your LAN or VPN:
+
+- **Add `-secure-cookies`** so the session cookie is never sent over plain
+  HTTP. Leave it off for a direct HTTP deployment, or login will not stick.
+- **Preserve the `Host` header.** PrepKit rejects form submissions whose
+  `Origin` does not match `Host`. In nginx, use `proxy_set_header Host $host;`.
+
+In Docker, flags go after the image name and replace the default command:
+
+```
+docker run -d --name prepkit -p 127.0.0.1:8214:8214 \
+  -e PREPKIT_ADMIN_SECRET='choose-a-long-secret' \
+  -v prepkit-data:/data ghcr.io/iotemylabs/prepkit:latest \
+  serve -listen 0.0.0.0:8214 -allow-public-bind -data-dir /data -secure-cookies
+```
+
 ### Raspberry Pi / ARM
+
+Release binaries and images include `linux/arm64`. To build from source:
 
 ```
 CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o prepkit ./cmd/prepkit
@@ -116,11 +153,14 @@ prepkit serve          start the web server (default)
   -templates DIR       load an extra template pack directory
   -admin-secret-file   read the admin secret from a file
   -allow-public-bind   permit a non-loopback bind (warns loudly)
+  -secure-cookies      mark the session cookie Secure (for HTTPS proxies)
 
 prepkit validate [DIR]     validate template packs; nonzero exit on failure
 prepkit export-json        full JSON export to stdout or -o FILE
 prepkit export-static -o DIR   write the offline HTML export
 prepkit backup -o FILE         write a complete copy of the database (warns)
+prepkit healthcheck            exit nonzero unless the local server responds
+prepkit version                print the version and exit
 ```
 
 ## Data ownership
@@ -162,6 +202,17 @@ Dependencies, deliberately few: `modernc.org/sqlite` (pure-Go SQLite),
 (packs are validated against the actual spec schema), `skip2/go-qrcode`
 (label PNGs). The web UI is standard library `net/http` and `html/template`
 with zero JavaScript and no frontend build step.
+
+### Releasing
+
+Push a tag and the release workflow does the rest: it runs the tests, attaches
+checksummed binaries to a GitHub Release, and publishes the multi-arch image to
+`ghcr.io/iotemylabs/prepkit`. A tag with a suffix, such as `v0.2.0-rc.1`, is
+marked as a prerelease and does not move `:latest`.
+
+```
+git tag v0.2.0 && git push origin v0.2.0
+```
 
 ## Disclaimer
 
